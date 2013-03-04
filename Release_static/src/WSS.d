@@ -1,1 +1,1 @@
-src/WSS.d src/WSS.o: ../src/WSS.cpp
+src/WSS.d: ../src/WSS.cpp
