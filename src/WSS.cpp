@@ -173,9 +173,9 @@ int main(int argc, char* argv[]){
 	boost::program_options::options_description description("Available options");
 	description.add_options()
 		("help", "produce this help message")
-		("websocket-port", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 1337")
-		("MQTT-hostname", boost::program_options::value<std::string>(), "specify the host of the MQTT broker.\nDefault is localhost")
-		("MQTT-port", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883");
+		("websocketPort", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 1337")
+		("brokerHost", boost::program_options::value<std::string>(), "specify the host of the MQTT broker.\nDefault is localhost")
+		("brokerPort", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883");
 	boost::program_options::variables_map variables_map;
 	try {
 		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), variables_map);
@@ -185,9 +185,9 @@ int main(int argc, char* argv[]){
 			return 1;
 		}
 
-		unsigned short websocketPort = variables_map.find("websocket-port") != variables_map.end() ? variables_map["websocket-port"].as<unsigned short>() : 1337;
-		Connection::hostname = variables_map.find("MQTT-hostname") != variables_map.end() ? variables_map["MQTT-hostname"].as<std::string>() : "localhost";
-		Connection::port = variables_map.find("MQTT-port") != variables_map.end() ? variables_map["MQTT-port"].as<std::string>() : "1883";
+		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 1337;
+		Connection::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
+		Connection::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 
 		websocketpp::server::handler::ptr serverHandler = websocketpp::server::handler::ptr(new ServerHandler());
 		websocketpp::server websocketServer(serverHandler);
