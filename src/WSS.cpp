@@ -41,7 +41,7 @@
 class Connection {
 public:
 	Connection(websocketpp::server::handler::connection_ptr con, boost::asio::io_service &io_service) :
-		websocket_connection(con), socket(io_service), readBuffer(1500){
+		websocket_connection(con), socket(io_service), readBuffer(8192){
 #ifdef DEBUG
 		std::cout << "creating connection object" << std::endl;
 #endif
@@ -73,11 +73,13 @@ public:
 		if (!error) {
 			std::string message(readBuffer.data(), bytes_transferred);
 #ifdef DEBUG
-			std::cout << "received " << bytes_transferred << " bytes: ";
-			for(std::vector<char>::iterator it = readBuffer.begin(); it != readBuffer.end(); it++){
+			std::cout << "received TCP segment from broker " << bytes_transferred << " bytes: ";
+			unsigned int i = 0;
+			for(std::vector<char>::iterator it = readBuffer.begin(); it != readBuffer.end() && i <= message.size(); it++, i++){
 				std::cout << std::setw(2) << std::setfill('0') << std::hex << (short)*it << " ";
 			}
 			std::cout << std::dec << std::endl;
+		    std::cout << "plaintext: " << message << std::endl;
 #endif
 			websocket_connection->send(message, websocketpp::frame::opcode::BINARY);
 			socket.async_receive(
@@ -93,16 +95,18 @@ public:
 
 	void send(const std::string &message) {
 #ifdef DEBUG
-		std::cout << "sent " << message.size() << " bytes: " ;
-		for(std::string::const_iterator it = message.begin(); it != message.end(); it++)
+		std::cout << "sent TCP segment to broker " << message.size() << " bytes: " ;
+		unsigned int i = 0;
+		for(std::string::const_iterator it = message.begin(); it != message.end() && i <= message.size(); it++, i++)
 			std::cout << std::setw(2) << std::setfill('0') << std::hex << (short)*it << " ";
 		std::cout << std::dec << std::endl;
+		std::cout << "plaintext: " << message << std::endl;
 #endif
 		try{
 			socket.write_some(boost::asio::buffer(message.c_str(), message.size()));
 		}catch(boost::system::system_error &e){
-			std::cerr << "Write Error: " << e.what() << std::endl;
-			websocket_connection->close(websocketpp::close::status::NORMAL, "cant establish tcp connection");
+			std::cerr << "Write Error in TCP connection to broker: " << e.what() << std::endl;
+			websocket_connection->close(websocketpp::close::status::NORMAL, "cant close tcp connection");
 		}
 	}
 
@@ -111,14 +115,14 @@ public:
 				boost::asio::buffer(readBuffer),
 				boost::bind(&Connection::receive, this,	boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 #ifdef DEBUG
-		std::cout << "started async receive" << std::endl;
+		std::cout << "started async TCP receive" << std::endl;
 #endif
 	}
 
 	void stop() {
 		socket.close();
 #ifdef DEBUG
-		std::cout << "stopped async receive" << std::endl;
+		std::cout << "stopped async TCP receive" << std::endl;
 #endif
 	}
 
@@ -134,15 +138,16 @@ private:
 std::string Connection::hostname;
 std::string Connection::port;
 
-// The WebSocket++ handler in this case reads numbers from connections and packs
-// connection pointer + number into a request struct and passes it off to the
-// coordinator.
+// The WebSocket++ handler 
 class ServerHandler: public websocketpp::server::handler {
 public:
 	void on_message(connection_ptr con, message_ptr msg) {
-		if (connections.find(con) != connections.end())
+		if (connections.find(con) != connections.end()){
+#ifdef DEBUG
+            std::cout << "received from websocket: " << msg->get_payload() << std::endl;
+#endif
 			connections[con]->send(msg->get_payload());
-		else
+		}else
 			std::cerr << "that shouldn't have happened" << std::endl;
 	}
 	void on_open(connection_ptr con) {
@@ -160,7 +165,7 @@ public:
 			delete connections[con];
 			connections.erase(it);
 #ifdef DEBUG
-			std::cout << "closing connection, delete corresponding handler" << connections.size() << std::endl;
+			std::cout << "closing connection, delete corresponding handler. handlers left:" << connections.size() << std::endl;
 #endif
 		} else
 			std::cerr << "that shouldn't have happened" << std::endl;
