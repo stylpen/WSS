@@ -82,7 +82,7 @@ public:
 			std::cout << "received header from broker." << std::endl
 					<< "Length: " << bytes_transferred << " Bytes" << std::endl
 					<< std::setw(2) << std::setfill('0') << std::hex
-					<< "Payload: " << (short)mqtt_header[0] << " " << (short)mqtt_header[1] << std::endl << std::endl << std::hex;
+					<< "Payload: " << (short)mqtt_header[0] << " " << (short)mqtt_header[1] << std::endl << std::endl << std::dec;
 #endif
 			mqttMessage = std::string(mqtt_header, bytes_transferred);
 			if(mqtt_header[1] == 0){ // nothing following remaining length is 0 maybe that was a ping or something.
@@ -107,10 +107,10 @@ public:
 						)
 				);
 			} else{ // receive_mqtt_message will do the rest
-#ifdef DEBUG
-				std::cout << "the rest length is: " << std::endl << std::endl;
-#endif
 				remaining_length = mqtt_header[1];
+#ifdef DEBUG
+				std::cout << "the remaining message length is: " << remaining_length << std::endl << std::endl;
+#endif
 				readBuffer.resize(remaining_length);
 				boost::asio::async_read(
 						socket,
@@ -150,7 +150,7 @@ public:
 #ifdef DEBUG
 			std::cout << "received one more byte with remaining length: "
 					<< std::setw(2) << std::setfill('0') << std::hex
-					<< (short)next_byte << std::endl << std::hex;
+					<< (short)next_byte << std::endl << std::dec;
 #endif
 				mqttMessage.append(std::string(&next_byte, 1));
 				if(next_byte & 0x80){ // there is still a continuation bit and we need to go on by calling this method again.
