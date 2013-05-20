@@ -125,7 +125,7 @@ public:
 				);
 			}
 		} else {
-			std::cout << "error reading the header" << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
+			std::cout << "error reading the header " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
 		}
 	}
 
@@ -186,7 +186,7 @@ public:
 					);
 				}
 			} else {
-				std::cout << "error reading length bytes" << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
+				std::cout << "error reading length bytes " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
 			}
 		}
 
@@ -209,7 +209,7 @@ public:
 			// wait for new message
 			start();
 		}else {
-			std::cout << "error reading mqtt message" << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
+			std::cout << "error reading mqtt message " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
 		}
 	}
 
