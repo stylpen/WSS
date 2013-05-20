@@ -8,6 +8,10 @@ It creates a WebSocket server and forwards any WebSocket traffic to a TCP Server
 For every new WebSocket connection a TCP connection to the destination server is created and bound to the corresponding WebSocket connection.
 This results in a 1:1 mapping of WebSocket and TCP connections and ensures that the responses of the TCP server arrive at the original WebSocket client.
 
+The goal was initially to create a bridge that is content INsensitive and only routes the traffic from A to B.
+However, this approach is not ideal for MQTT as some JavaScript clients (including the reference implementation from Paho) can't handle multiple MQTT messages arriving at once in a WebSocket message (as they are sent in one TCP segemnt by the broker).
+In the mqtt branch of WSS is an (experimental (no error recovery capabilities yet)) version that reads the MQTT header and determins the length of the message. It uses that information to send exactly ONE mqtt message to the WebSocket client. 
+
 It uses websocket++ (https://github.com/zaphoyd/websocketpp) and the Boost C++ Libraries (http://www.boost.org/).
 
 The Websocket Server was developed using the eclipse IDE.
