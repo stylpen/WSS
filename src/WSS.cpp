@@ -26,11 +26,9 @@
  */
 
 #include <websocketpp/websocketpp.hpp>
-#include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <cstring>
 #include <sstream>
 #include <iomanip>
 
@@ -126,6 +124,7 @@ public:
 			}
 		} else {
 			std::cout << "error reading the header " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
+			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading MQTT header");
 		}
 	}
 
@@ -187,6 +186,7 @@ public:
 				}
 			} else {
 				std::cout << "error reading length bytes " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
+				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading remaining length");
 			}
 		}
 
@@ -210,6 +210,7 @@ public:
 			start();
 		}else {
 			std::cout << "error reading mqtt message " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
+			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem in receice_message");
 		}
 	}
 
@@ -226,7 +227,7 @@ public:
 			socket.write_some(boost::asio::buffer(message.c_str(), message.size()));
 		}catch(boost::system::system_error &e){
 			std::cerr << "Write Error in TCP connection to broker: " << e.what() << std::endl;
-			websocket_connection->close(websocketpp::close::status::NORMAL, "can't close tcp connection");
+			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while sending");
 		}
 	}
 
@@ -273,15 +274,6 @@ std::string Connection::port;
 // The WebSocket++ handler 
 class ServerHandler: public websocketpp::server::handler {
 public:
-	void on_message(connection_ptr con, message_ptr msg) {
-		if (connections.find(con) != connections.end()){
-#ifdef DEBUG
-            std::cout << "received from websocket: " << msg->get_payload() << std::endl;
-#endif
-			connections[con]->send(msg->get_payload());
-		}else
-			std::cerr << "that shouldn't have happened" << std::endl;
-	}
 	void on_open(connection_ptr con) {
 		if (connections.find(con) == connections.end()) {
 #ifdef DEBUG
@@ -291,17 +283,41 @@ public:
 		} else
 			std::cerr << "did I just reuse a connection pointer???" << std::endl;
 	}
+
+	void on_message(connection_ptr con, message_ptr msg) {
+		if (connections.find(con) != connections.end()){
+#ifdef DEBUG
+            std::cout << "received from websocket: " << msg->get_payload() << std::endl;
+#endif
+			connections[con]->send(msg->get_payload());
+		}else
+			std::cerr << "failed receiving websocket message" << std::endl;
+	}
+
 	void on_close(connection_ptr con) {
 		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
 		if (it != connections.end()) {
 			delete connections[con];
 			connections.erase(it);
 #ifdef DEBUG
-			std::cout << "closing connection, delete corresponding handler. handlers left:" << connections.size() << std::endl;
+			std::cout << "closing connection and deleting corresponding handler. number of handlers left:" << connections.size() << std::endl;
 #endif
 		} else
-			std::cerr << "that shouldn't have happened" << std::endl;
+			std::cerr << "there was no connection to close. strange ..!" << std::endl;
 	}
+
+	void on_fail(connection_ptr con) {
+		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
+		if (it != connections.end()) {
+			delete connections[con];
+			connections.erase(it);
+#ifdef DEBUG
+			std::cout << "something really failed .. tried to clean up. number of handlers left:" << connections.size() << std::endl;
+#endif
+		} else
+			std::cerr << "failing! wasn't able to clean anything up." << std::endl;
+	}
+
 private:
 	std::map<connection_ptr, Connection*> connections;
 };
