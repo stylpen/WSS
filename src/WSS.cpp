@@ -41,7 +41,7 @@ public:
 	Connection(websocketpp::server::handler::connection_ptr con, boost::asio::io_service &io_service) :
 		websocket_connection(con), socket(io_service), readBuffer(1024), mqttMessage(""){
 #ifdef DEBUG
-		std::cout << "creating connection object" << std::endl;
+		std::cout << "creating connection object" << " connection " << this << std::endl;
 #endif
 		boost::asio::ip::tcp::resolver resolver(io_service);
 		boost::asio::ip::tcp::resolver::query query(Connection::hostname, Connection::port);
@@ -64,6 +64,11 @@ public:
 	}
 
 	~Connection(){
+		socket.cancel();
+		websocket_connection->close(websocketpp::close::status::NORMAL, "closing");
+#ifdef DEBUG
+		std::cout << "destructor websocket: " << websocket_connection << " connection " << this << std::endl;
+#endif
 		stop();
 	}
 
@@ -123,8 +128,11 @@ public:
 				);
 			}
 		} else {
-			std::cout << "error reading the header " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
-			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading MQTT header");
+#ifdef DEBUG
+			std::cout << "stopped receiving header " << std::endl << bytes_transferred << " bytes arrived so far. error " << error << " websocket: " << websocket_connection << " connection " << this << std::endl << std::endl;
+#endif
+			if(error != boost::asio::error::operation_aborted)
+				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading MQTT header");
 		}
 	}
 
@@ -185,8 +193,11 @@ public:
 					);
 				}
 			} else {
+#ifdef DEBUG
 				std::cout << "error reading length bytes " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
-				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading remaining length");
+#endif
+				if(error != boost::asio::error::operation_aborted)
+					websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading remaining length");
 			}
 		}
 
@@ -209,8 +220,11 @@ public:
 			// wait for new message
 			start();
 		}else {
+#ifdef DEBUG
 			std::cout << "error reading mqtt message " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
-			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem in receice_message");
+#endif
+			if(error != boost::asio::error::operation_aborted)
+				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem in receice_message");
 		}
 	}
 
@@ -227,7 +241,8 @@ public:
 			socket.write_some(boost::asio::buffer(message.c_str(), message.size()));
 		}catch(boost::system::system_error &e){
 			std::cerr << "Write Error in TCP connection to broker: " << e.what() << std::endl;
-			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while sending");
+			if(websocket_connection)
+				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while sending");
 		}
 	}
 
@@ -297,7 +312,8 @@ public:
 	void on_close(connection_ptr con) {
 		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
 		if (it != connections.end()) {
-			delete connections[con];
+			if(connections[con])
+				delete connections[con];
 			connections.erase(it);
 #ifdef DEBUG
 			std::cout << "closing connection and deleting corresponding handler. number of handlers left:" << connections.size() << std::endl;
@@ -309,7 +325,8 @@ public:
 	void on_fail(connection_ptr con) {
 		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
 		if (it != connections.end()) {
-			delete connections[con];
+			if(connections[con])
+				delete connections[con];
 			connections.erase(it);
 #ifdef DEBUG
 			std::cout << "something really failed .. tried to clean up. number of handlers left:" << connections.size() << std::endl;
