@@ -63,6 +63,8 @@ public:
 	}
 
 	~Connection(){
+		socket.cancel();
+		websocket_connection->close(websocketpp::close::status::NORMAL, "closing connection");
 		stop();
 	}
 
@@ -84,8 +86,11 @@ public:
 					boost::bind(&Connection::receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 		}
 		else {
-			std::cout << "I'm done" << std::endl;
-			websocket_connection->close(websocketpp::close::status::NORMAL, "failed to receive data from broker");
+#ifdef DEBUG
+			std::cout << "I'm done (stopping async_receive)" << std::endl;
+#endif
+			if(error != boost::asio::error::operation_aborted)
+				websocket_connection->close(websocketpp::close::status::NORMAL, "failed to receive data from broker");
 		}
 	}
 
