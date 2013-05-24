@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?fileVersion 4.0.0?>
-
-<cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+<?xml version="1.0" encoding="UTF-8"?><?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="cdt.managedbuild.config.gnu.exe.debug.119736524">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.debug.119736524" moduleId="org.eclipse.cdt.core.settings" name="Debug_static">
@@ -29,6 +26,9 @@
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.574074810" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 " valueType="string"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.2006727173" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="DEBUG"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1284550511" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.291125069" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
@@ -46,12 +46,12 @@
 								</option>
 								<option id="gnu.cpp.link.option.flags.1347418772" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.userobjs.1229548353" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_program_options.a"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libwebsocketpp.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_system.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_thread.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_date_time.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_regex.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_program_options.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_system.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_thread.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_date_time.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_regex.a"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.120255135" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -72,7 +72,6 @@
 			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 			<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
-			<storageModule moduleId="scannerConfiguration"/>
 		</cconfiguration>
 		<cconfiguration id="cdt.managedbuild.config.gnu.exe.release.1516671920">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.release.1516671920" moduleId="org.eclipse.cdt.core.settings" name="Release_static">
@@ -115,10 +114,10 @@
 								</option>
 								<option id="gnu.cpp.link.option.userobjs.625825498" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="/usr/local/lib/libwebsocketpp.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_thread.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_regex.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_system.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_program_options.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_thread.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_regex.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_system.a"/>
+									<listOptionValue builtIn="false" value="/usr/lib/libboost_program_options.a"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.2131412397" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -139,7 +138,6 @@
 			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 			<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
-			<storageModule moduleId="scannerConfiguration"/>
 		</cconfiguration>
 		<cconfiguration id="cdt.managedbuild.config.gnu.exe.debug.119736524.1133770394">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.debug.119736524.1133770394" moduleId="org.eclipse.cdt.core.settings" name="Debug_shared">
@@ -167,6 +165,9 @@
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1862072605" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 " valueType="string"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1949674019" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="DEBUG"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.303684921" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1844891649" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
@@ -181,16 +182,15 @@
 								</option>
 								<option id="gnu.cpp.link.option.libs.545757482" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="pthread"/>
+									<listOptionValue builtIn="false" value="websocketpp"/>
+									<listOptionValue builtIn="false" value="boost_program_options"/>
+									<listOptionValue builtIn="false" value="boost_system"/>
+									<listOptionValue builtIn="false" value="boost_thread"/>
+									<listOptionValue builtIn="false" value="boost_date_time"/>
+									<listOptionValue builtIn="false" value="boost_regex"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.298370811" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
-								<option id="gnu.cpp.link.option.userobjs.1064233637" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_program_options.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libwebsocketpp.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_system.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_thread.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_date_time.a"/>
-									<listOptionValue builtIn="false" value="/usr/local/lib/libboost_regex.a"/>
-								</option>
+								<option id="gnu.cpp.link.option.userobjs.1064233637" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.513430979" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -210,7 +210,6 @@
 			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 			<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
-			<storageModule moduleId="scannerConfiguration"/>
 		</cconfiguration>
 		<cconfiguration id="cdt.managedbuild.config.gnu.exe.release.1516671920.614541510">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.release.1516671920.614541510" moduleId="org.eclipse.cdt.core.settings" name="Release_shared">
@@ -278,14 +277,24 @@
 			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 			<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
-			<storageModule moduleId="scannerConfiguration"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="WSS.cdt.managedbuild.target.gnu.exe.1724576379" name="Executable" projectType="cdt.managedbuild.target.gnu.exe"/>
 	</storageModule>
-	<storageModule moduleId="refreshScope" versionNumber="1">
-		<resource resourceType="PROJECT" workspacePath="/WSS"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug_static">
+			<resource resourceType="PROJECT" workspacePath="/WSS"/>
+		</configuration>
+		<configuration configurationName="Release_static">
+			<resource resourceType="PROJECT" workspacePath="/WSS"/>
+		</configuration>
+		<configuration configurationName="Release_shared">
+			<resource resourceType="PROJECT" workspacePath="/WSS"/>
+		</configuration>
+		<configuration configurationName="Debug_shared">
+			<resource resourceType="PROJECT" workspacePath="/WSS"/>
+		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
@@ -702,4 +711,5 @@
 			</profile>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 </cproject>

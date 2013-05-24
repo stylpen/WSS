@@ -22,15 +22,12 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
 #include <websocketpp/websocketpp.hpp>
-#include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <cstring>
 #include <sstream>
 #include <iomanip>
 
@@ -86,11 +83,10 @@ public:
 					boost::asio::buffer(readBuffer),
 					boost::bind(&Connection::receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 		}
-#ifdef DEBUG
 		else {
 			std::cout << "I'm done" << std::endl;
+			websocket_connection->close(websocketpp::close::status::NORMAL, "failed to receive data from broker");
 		}
-#endif
 	}
 
 	void send(const std::string &message) {
@@ -141,15 +137,6 @@ std::string Connection::port;
 // The WebSocket++ handler 
 class ServerHandler: public websocketpp::server::handler {
 public:
-	void on_message(connection_ptr con, message_ptr msg) {
-		if (connections.find(con) != connections.end()){
-#ifdef DEBUG
-            std::cout << "received from websocket: " << msg->get_payload() << std::endl;
-#endif
-			connections[con]->send(msg->get_payload());
-		}else
-			std::cerr << "that shouldn't have happened" << std::endl;
-	}
 	void on_open(connection_ptr con) {
 		if (connections.find(con) == connections.end()) {
 #ifdef DEBUG
@@ -159,6 +146,17 @@ public:
 		} else
 			std::cerr << "did I just reuse a connection pointer???" << std::endl;
 	}
+
+	void on_message(connection_ptr con, message_ptr msg) {
+		if (connections.find(con) != connections.end()){
+#ifdef DEBUG
+            std::cout << "received from websocket: " << msg->get_payload() << std::endl;
+#endif
+			connections[con]->send(msg->get_payload());
+		}else
+			std::cerr << "error receiving websocket message" << std::endl;
+	}
+
 	void on_close(connection_ptr con) {
 		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
 		if (it != connections.end()) {
@@ -168,7 +166,19 @@ public:
 			std::cout << "closing connection, delete corresponding handler. handlers left:" << connections.size() << std::endl;
 #endif
 		} else
-			std::cerr << "that shouldn't have happened" << std::endl;
+			std::cerr << "can't remove connection on close" << std::endl;
+	}
+
+	void on_fail(connection_ptr con) {
+		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
+		if (it != connections.end()) {
+			delete connections[con];
+			connections.erase(it);
+#ifdef DEBUG
+			std::cout << "something failed. deleted handler. number of handlers left:" << connections.size() << std::endl;
+#endif
+		} else
+			std::cerr << "there is nothing to clean up after something failed in the connection handler." << std::endl;
 	}
 private:
 	std::map<connection_ptr, Connection*> connections;
