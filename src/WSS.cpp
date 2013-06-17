@@ -32,6 +32,8 @@
 #include <sstream>
 #include <iomanip>
 
+#define VERSION "MQTT VERSION BUILD 0.1"
+
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware
 // Its send() method sends stuff (from the websocket) to the TCP endpoint
@@ -41,7 +43,10 @@ public:
 	Connection(websocketpp::server::handler::connection_ptr con, boost::asio::io_service &io_service) :
 		websocket_connection(con), socket(io_service), readBuffer(1024), mqttMessage(""){
 #ifdef DEBUG
-		std::cout << "creating connection object" << " connection " << this << std::endl;
+		std::cout << "In Connection Constructor: creating new connection object: " << this << std::endl;
+#endif
+#ifdef SEGVDEBUG
+		std::cerr << "In Connection Constructor: creating new connection object: " << this << std::endl;
 #endif
 		boost::asio::ip::tcp::resolver resolver(io_service);
 		boost::asio::ip::tcp::resolver::query query(Connection::hostname, Connection::port);
@@ -64,12 +69,26 @@ public:
 	}
 
 	~Connection(){
+#ifdef SEGVDEBUG
+		std::cerr << "Beginning of Destructor of Connection" << std::endl << "   Will cancel TCP connection now ..." << std::endl << "   Connection address is: " << this << std::endl;
+#endif
 		socket.cancel();
+#ifdef SEGVDEBUG
+		std::cerr << "In Destructor of Connection" << std::endl << "   Will close Websocket connection now ..." << std::endl << "   Connection address is: " << this << std::endl;
+		std::cerr << "   WEBSOCKET CONNECTION POINTER ADDRESS IS: " << websocket_connection << std::endl;
+#endif
 		websocket_connection->close(websocketpp::close::status::NORMAL, "closing");
 #ifdef DEBUG
 		std::cout << "destructor websocket: " << websocket_connection << " connection " << this << std::endl;
 #endif
+#ifdef SEGVDEBUG
+		std::cerr << "In Destructor of Connection" << std::endl << "   Will call stop() now ..." << std::endl << "   Connection address is: " << this << std::endl;
+		std::cerr << "   WEBSOCKET CONNECTION POINTER ADDRESS IS (after closing): " << websocket_connection << std::endl;
+#endif
 		stop();
+#ifdef SEGVDEBUG
+		std::cerr << "End of Destructor of Connection" << std::endl << "   Connection address is: " << this << std::endl;
+#endif
 	}
 
 	/*
@@ -131,8 +150,23 @@ public:
 #ifdef DEBUG
 			std::cout << "stopped receiving header " << std::endl << bytes_transferred << " bytes arrived so far. error " << error << " websocket: " << websocket_connection << " connection " << this << std::endl << std::endl;
 #endif
-			if(error != boost::asio::error::operation_aborted)
+#ifdef SEGVDEBUG
+				std::cerr << "Error or did not get two bytes in receive_header. Error is: " << error << std::endl << "   Connection address is: " << this << std::endl;
+#endif
+			if(error && error != boost::asio::error::operation_aborted){ // sometimes there is no "operation_aborted" error even if I cancel the TCP socket in the destructor. strange - but I assume that the websocket was closed by the destructor and nothing is to be done here ...
+#ifdef SEGVDEBUG
+				std::cerr << "In receive_header; before closing websocket because TCP was not aborted so it means we really got an error and want to close " << error << std::endl << "   Connection address is: " << this << std::endl;
+				std::cerr << "   WEBSOCKET CONNECTION POINTER ADDRESS IS: " << websocket_connection << std::endl;
+#endif
 				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading MQTT header");
+#ifdef SEGVDEBUG
+				std::cerr << "In receive_header; after closing websocket because TCP was not aborted so it means we really got an error and wanted to close " << error << std::endl << "   Connection address is: " << this << std::endl;
+#endif
+			}
+#ifdef SEGVDEBUG
+			if(error == boost::asio::error::operation_aborted)
+				std::cerr << "   In receive_header. Error indicates that the connection should be aborted. This means that the Websocket connection was closed in the Destructor! " << std::endl << "   Connection address is: " << this << std::endl << std::endl;
+#endif
 		}
 	}
 
@@ -196,8 +230,23 @@ public:
 #ifdef DEBUG
 				std::cout << "error reading length bytes " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
 #endif
-				if(error != boost::asio::error::operation_aborted)
+#ifdef SEGVDEBUG
+				std::cerr << "Error or not enough bytes in receive_remaining_length. Error is: " << error << std::endl << "   Connection address is: " << this << std::endl;
+#endif
+				if(error && error != boost::asio::error::operation_aborted){ // sometimes there is no "operation_aborted" error even if I cancel the TCP socket in the destructor. strange - but I assume that the websocket was closed by the destructor and nothing is to be done here ...
+#ifdef SEGVDEBUG
+				std::cerr << "In receive_remaining_length; before closing websocket because TCP was not aborted so it means we really got an error and want to close " << error << std::endl << "   Connection address is: " << this << std::endl;
+				std::cerr << "   WEBSOCKET CONNECTION POINTER ADDRESS IS: " << websocket_connection << std::endl;
+#endif
 					websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading remaining length");
+#ifdef SEGVDEBUG
+				std::cerr << "In receive_remaining_length; after closing websocket because TCP was not aborted so it means we really got an error and wanted to close " << error << std::endl << "   Connection address is: " << this << std::endl;
+#endif
+				}
+#ifdef SEGVDEBUG
+			if(error == boost::asio::error::operation_aborted)
+				std::cerr << "   In receive_remaining_length. Error indicates that the connection should be aborted. This means that the Websocket connection was closed in the Destructor! " << std::endl << "   Connection address is: " << this << std::endl << std::endl;
+#endif
 			}
 		}
 
@@ -219,12 +268,27 @@ public:
 			websocket_connection->send(mqttMessage, websocketpp::frame::opcode::BINARY);
 			// wait for new message
 			start();
-		}else {
+		} else {
 #ifdef DEBUG
 			std::cout << "error reading mqtt message " << std::endl << bytes_transferred << "bytes arrived so far" << std::endl<< std::endl;
 #endif
-			if(error != boost::asio::error::operation_aborted)
+#ifdef SEGVDEBUG
+				std::cerr << "Error or not enough bytes in receive_mqtt_message. Error is: " << error << std::endl << "Connection address is: " << this << std::endl;
+#endif
+			if(error && error != boost::asio::error::operation_aborted){ // sometimes there is no "operation_aborted" error even if I cancel the TCP socket in the destructor. strange - but I assume that the websocket was closed by the destructor and nothing is to be done here ...
+#ifdef SEGVDEBUG
+				std::cerr << "In receive_mqtt_message; before closing websocket because TCP was not aborted so it means we really got an error and want to close " << error << std::endl << "   Connection address is: " << this << std::endl;
+				std::cerr << "   WEBSOCKET CONNECTION POINTER ADDRESS IS: " << websocket_connection << std::endl;
+#endif
 				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem in receice_message");
+#ifdef SEGVDEBUG
+				std::cerr << "In receive_mqtt_message; after closing websocket because TCP was not aborted so it means we really got an error and wanted to close " << error << std::endl << "   Connection address is: " << this << std::endl;
+#endif
+			}
+#ifdef SEGVDEBUG
+			if(error == boost::asio::error::operation_aborted)
+				std::cerr << "   In receive_mqtt_message. Error indicates that the connection should be aborted. This means that the Websocket connection was closed in the Destructor! " << std::endl << "   Connection address is: " << this << std::endl << std::endl;
+#endif
 		}
 	}
 
@@ -263,10 +327,16 @@ public:
 #endif
 	}
 
-	void stop() {
+	void stop(){
+#ifdef SEGVDEBUG
+		std::cerr << "Beginning of stop() (called by Destructor of Connection)" << std::endl << "   Connection address is: " << this << std::endl;
+#endif
 		socket.close();
 #ifdef DEBUG
 		std::cout << "stopped async TCP receive" << std::endl;
+#endif
+#ifdef SEGVDEBUG
+		std::cerr << "End of stop() (called by Destructor of Connection)" << std::endl << "   Connection address is: " << this << std::endl;
 #endif
 	}
 
@@ -289,12 +359,18 @@ std::string Connection::port;
 // The WebSocket++ handler 
 class ServerHandler: public websocketpp::server::handler {
 public:
-	void on_open(connection_ptr con) {
+	void on_open(connection_ptr con){
+#ifdef SEGVDEBUG
+		std::cerr << "In on_open" << std::endl << "   WEBSOCKET CONNECTION POINTER address is: " << con << std::endl;
+#endif
 		if (connections.find(con) == connections.end()) {
 #ifdef DEBUG
 			std::cout << "new connection, create new handler to process this message" << std::endl;
 #endif
 			connections[con] = new Connection(con, con->get_io_service());
+#ifdef SEGVDEBUG
+		std::cerr << "Added new Connection to map" << std::endl << "   Connection address is: " << connections[con] << std::endl;
+#endif
 		} else
 			std::cerr << "did I just reuse a connection pointer???" << std::endl;
 	}
@@ -312,22 +388,45 @@ public:
 	void on_close(connection_ptr con) {
 		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
 		if (it != connections.end()) {
-			if(connections[con])
+			if(connections[con]){
+#ifdef SEGVDEBUG
+				std::cerr << "In on_close of Websocket" << std::endl << "  Will delete Connection with  address: " << connections[con] << std::endl;
+#endif
 				delete connections[con];
+#ifdef SEGVDEBUG
+				std::cerr << "In on_close of Websocket" << std::endl << "  Deleted Connection. Address is now: " << connections[con] << std::endl;
+#endif
+			}
 			connections.erase(it);
+#ifdef SEGVDEBUG
+			std::cerr << "Back in on_close of Websocket" << std::endl << "  Removed Connection from map. Remaining Connections in map: " << connections.size() << std::endl << std::endl;
+#endif
 #ifdef DEBUG
 			std::cout << "closing connection and deleting corresponding handler. number of handlers left:" << connections.size() << std::endl;
 #endif
 		} else
 			std::cerr << "there was no connection to close. strange ..!" << std::endl;
+#ifdef SEGVDEBUG
+			std::cerr << "End of on_close of Websocket" << std::endl << std::endl;
+#endif
 	}
 
 	void on_fail(connection_ptr con) {
 		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
 		if (it != connections.end()) {
-			if(connections[con])
+			if(connections[con]){
+#ifdef SEGVDEBUG
+				std::cerr << "In on_fail of Websocket" << std::endl << "   Will delete Connection with  address: " << connections[con] << std::endl;
+#endif
 				delete connections[con];
+#ifdef SEGVDEBUG
+				std::cerr << "Back in on_fail of Websocket" << std::endl << "   Deleted Connection. Address is now: " << connections[con] << std::endl;
+#endif
+			}
 			connections.erase(it);
+#ifdef SEGVDEBUG
+			std::cerr << "In on_fail of Websocket" << std::endl << "  Removed Connection from map. Remaining Connections in map: " << connections.size() << std::endl << std::endl;
+#endif
 #ifdef DEBUG
 			std::cout << "something really failed .. tried to clean up. number of handlers left:" << connections.size() << std::endl;
 #endif
@@ -343,9 +442,10 @@ int main(int argc, char* argv[]){
 	boost::program_options::options_description description("Available options");
 	description.add_options()
 		("help", "produce this help message")
-		("websocketPort", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 1337")
+		("websocketPort", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 1884")
 		("brokerHost", boost::program_options::value<std::string>(), "specify the host of the MQTT broker.\nDefault is localhost")
-		("brokerPort", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883");
+		("brokerPort", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883")
+		("version", "print version number and exit");
 	boost::program_options::variables_map variables_map;
 	try {
 		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), variables_map);
@@ -354,8 +454,12 @@ int main(int argc, char* argv[]){
 			std::cout << description << "\n";
 			return 1;
 		}
+		if (variables_map.find("version") != variables_map.end()) {
+			std::cout << VERSION << "\n";
+			return 0;
+		}
 
-		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 1337;
+		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 1884;
 		Connection::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
 		Connection::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 
