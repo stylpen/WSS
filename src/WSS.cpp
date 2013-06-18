@@ -70,11 +70,8 @@ public:
 
 	~Connection(){
 #ifdef SEGVDEBUG
-		std::cerr << "Beginning of Destructor of Connection" << std::endl << "   Will cancel TCP connection now ..." << std::endl << "   Connection address is: " << this << std::endl;
-#endif
-		socket.cancel();
-#ifdef SEGVDEBUG
-		std::cerr << "In Destructor of Connection" << std::endl << "   Will close Websocket connection now ..." << std::endl << "   Connection address is: " << this << std::endl;
+		std::cerr << "Beginning of Destructor of Connection" << std::endl << "   Connection address is: " << this << std::endl;
+		std::cerr << "   Will close Websocket connection now ..." << std::endl << "   Connection address is: " << this << std::endl;
 		std::cerr << "   WEBSOCKET CONNECTION POINTER ADDRESS IS: " << websocket_connection << std::endl;
 #endif
 		websocket_connection->close(websocketpp::close::status::NORMAL, "closing");
@@ -82,11 +79,8 @@ public:
 		std::cout << "destructor websocket: " << websocket_connection << " connection " << this << std::endl;
 #endif
 #ifdef SEGVDEBUG
-		std::cerr << "In Destructor of Connection" << std::endl << "   Will call stop() now ..." << std::endl << "   Connection address is: " << this << std::endl;
+		std::cerr << "In Destructor of Connection" << std::endl << "   Connection address is: " << this << std::endl;
 		std::cerr << "   WEBSOCKET CONNECTION POINTER ADDRESS IS (after closing): " << websocket_connection << std::endl;
-#endif
-		stop();
-#ifdef SEGVDEBUG
 		std::cerr << "End of Destructor of Connection" << std::endl << "   Connection address is: " << this << std::endl;
 #endif
 	}
@@ -329,14 +323,15 @@ public:
 
 	void stop(){
 #ifdef SEGVDEBUG
-		std::cerr << "Beginning of stop() (called by Destructor of Connection)" << std::endl << "   Connection address is: " << this << std::endl;
+		std::cerr << "Beginning of stop()" << std::endl << "   Connection address is: " << this << std::endl;
 #endif
+		socket.cancel();
 		socket.close();
 #ifdef DEBUG
 		std::cout << "stopped async TCP receive" << std::endl;
 #endif
 #ifdef SEGVDEBUG
-		std::cerr << "End of stop() (called by Destructor of Connection)" << std::endl << "   Connection address is: " << this << std::endl;
+		std::cerr << "End of stop()" << std::endl << "   Connection address is: " << this << std::endl;
 #endif
 	}
 
@@ -392,6 +387,7 @@ public:
 #ifdef SEGVDEBUG
 				std::cerr << "In on_close of Websocket" << std::endl << "  Will delete Connection with  address: " << connections[con] << std::endl;
 #endif
+				connections[con]->stop();
 				delete connections[con];
 #ifdef SEGVDEBUG
 				std::cerr << "In on_close of Websocket" << std::endl << "  Deleted Connection. Address is now: " << connections[con] << std::endl;
@@ -442,7 +438,7 @@ int main(int argc, char* argv[]){
 	boost::program_options::options_description description("Available options");
 	description.add_options()
 		("help", "produce this help message")
-		("websocketPort", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 1884")
+		("websocketPort", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 18883")
 		("brokerHost", boost::program_options::value<std::string>(), "specify the host of the MQTT broker.\nDefault is localhost")
 		("brokerPort", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883")
 		("version", "print version number and exit");
@@ -459,7 +455,7 @@ int main(int argc, char* argv[]){
 			return 0;
 		}
 
-		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 1884;
+		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 18883;
 		Connection::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
 		Connection::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 
