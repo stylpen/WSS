@@ -93,6 +93,9 @@ public:
 	 * the method initializes the string mqttMessage (which is eventually sent via websocket) with the fixed header.
 	 */
 	void receive_header(const boost::system::error_code& error, size_t bytes_transferred){
+#ifdef SEGVDEBUG
+		std::cerr << "Beginning of receive_header\n  error is: " << error << std::endl << "Connection address is: " << this << std::endl << "bytes transferred: " << bytes_transferred << std::endl;
+#endif
 		if (!error && bytes_transferred == 2){
 #ifdef DEBUG
 			std::cout << "received header from broker." << std::endl
@@ -180,6 +183,9 @@ public:
 	 * while ((digit AND 128) != 0)
 	 */
 	void receive_remaining_length(const boost::system::error_code& error, size_t bytes_transferred){
+#ifdef SEGVDEBUG
+		std::cerr << "Beginning of receive_remaining_length\n  error is: " << error << std::endl << "Connection address is: " << this << std::endl << "bytes transferred: " << bytes_transferred << std::endl;
+#endif
 		static unsigned int multiplier = 1;
 			if (!error && bytes_transferred == 1) {
 #ifdef DEBUG
@@ -250,7 +256,10 @@ public:
 	 * Appends the stuff to the mqtt_message string and sends it via websocket
 	 */
 	void receive_mqtt_message(const boost::system::error_code& error, size_t bytes_transferred) {
-		if (!error && bytes_transferred == remaining_length){
+#ifdef SEGVDEBUG
+		std::cerr << "Beginning of receive_mqtt_message\n  error is: " << error << std::endl << "Connection address is: " << this << std::endl << "bytes transferred: " << bytes_transferred << std::endl;
+#endif
+		if (!error){
 #ifdef DEBUG
 			std::cout << "received message body from broker " << bytes_transferred << " bytes: ";
 			for(std::vector<char>::iterator it = readBuffer.begin(); it != readBuffer.end(); it++)
