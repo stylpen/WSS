@@ -29,16 +29,17 @@
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <sstream>
 #include <iomanip>
 
-#define VERSION "MQTT VERSION BUILD 0.1"
+#define VERSION "MQTT VERSION BUILD 0.2"
 
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware
 // Its send() method sends stuff (from the websocket) to the TCP endpoint
 
-class Connection {
+class Connection : public boost::enable_shared_from_this<Connection>{
 public:
 	Connection(websocketpp::server::handler::connection_ptr con, boost::asio::io_service &io_service) :
 		websocket_connection(con), socket(io_service), readBuffer(1024), mqttMessage(""){
@@ -64,7 +65,6 @@ public:
 #ifdef DEBUG
 			std::cout << "Starting a TCP client" << std::endl;
 #endif
-			start();
 		}
 	}
 
@@ -120,7 +120,7 @@ public:
 						boost::asio::transfer_at_least(1),
 						boost::bind(
 								&Connection::receive_remaining_length,
-								this,
+								shared_from_this(),
 								boost::asio::placeholders::error,
 								boost::asio::placeholders::bytes_transferred
 						)
@@ -137,7 +137,7 @@ public:
 						boost::asio::transfer_at_least(remaining_length),
 						boost::bind(
 								&Connection::receive_mqtt_message,
-								this,
+								shared_from_this(),
 								boost::asio::placeholders::error,
 								boost::asio::placeholders::bytes_transferred
 						)
@@ -206,7 +206,7 @@ public:
 							boost::asio::transfer_at_least(1),
 							boost::bind(
 									&Connection::receive_remaining_length,
-									this,
+									shared_from_this(),
 									boost::asio::placeholders::error,
 									boost::asio::placeholders::bytes_transferred
 							)
@@ -220,7 +220,7 @@ public:
 							boost::asio::transfer_at_least(remaining_length),
 							boost::bind(
 									&Connection::receive_mqtt_message,
-									this,
+									shared_from_this(),
 									boost::asio::placeholders::error,
 									boost::asio::placeholders::bytes_transferred
 							)
@@ -320,7 +320,7 @@ public:
 				boost::asio::transfer_at_least(2),
 				boost::bind(
 						&Connection::receive_header,
-						this,
+						shared_from_this(),
 						boost::asio::placeholders::error,
 						boost::asio::placeholders::bytes_transferred
 				)
@@ -371,7 +371,8 @@ public:
 #ifdef DEBUG
 			std::cout << "new connection, create new handler to process this message" << std::endl;
 #endif
-			connections[con] = new Connection(con, con->get_io_service());
+			connections[con] = boost::shared_ptr<Connection>(new Connection(con, con->get_io_service()));
+			connections[con]->start();
 #ifdef SEGVDEBUG
 		std::cerr << "Added new Connection to map" << std::endl << "   Connection address is: " << connections[con] << std::endl;
 #endif
@@ -390,14 +391,14 @@ public:
 	}
 
 	void on_close(connection_ptr con) {
-		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
+		std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
 		if (it != connections.end()) {
 			if(connections[con]){
 #ifdef SEGVDEBUG
 				std::cerr << "In on_close of Websocket" << std::endl << "  Will delete Connection with  address: " << connections[con] << std::endl;
 #endif
 				connections[con]->stop();
-				delete connections[con];
+				connections[con].reset();
 #ifdef SEGVDEBUG
 				std::cerr << "In on_close of Websocket" << std::endl << "  Deleted Connection. Address is now: " << connections[con] << std::endl;
 #endif
@@ -417,13 +418,14 @@ public:
 	}
 
 	void on_fail(connection_ptr con) {
-		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
+		std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
 		if (it != connections.end()) {
 			if(connections[con]){
 #ifdef SEGVDEBUG
 				std::cerr << "In on_fail of Websocket" << std::endl << "   Will delete Connection with  address: " << connections[con] << std::endl;
 #endif
-				delete connections[con];
+				connections[con]->stop();
+				connections[con].reset();
 #ifdef SEGVDEBUG
 				std::cerr << "Back in on_fail of Websocket" << std::endl << "   Deleted Connection. Address is now: " << connections[con] << std::endl;
 #endif
@@ -440,7 +442,7 @@ public:
 	}
 
 private:
-	std::map<connection_ptr, Connection*> connections;
+	std::map<connection_ptr, boost::shared_ptr<Connection> > connections;
 };
 
 int main(int argc, char* argv[]){
