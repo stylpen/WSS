@@ -28,19 +28,22 @@
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <sstream>
 #include <iomanip>
+
+#define VERSION "VERSION 0.2"
 
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket.
 // Its send() method sends stuff (from the websocket) to the TCP endpoint
 
-class Connection {
+	class Connection : public boost::enable_shared_from_this<Connection>{
 public:
 	Connection(websocketpp::server::handler::connection_ptr con, boost::asio::io_service &io_service) :
 		websocket_connection(con), socket(io_service), readBuffer(8192){
 #ifdef DEBUG
-		std::cout << "creating connection object" << std::endl;
+		std::cout << "Constructor of Connection" << std::endl;
 #endif
 		boost::asio::ip::tcp::resolver resolver(io_service);
 		boost::asio::ip::tcp::resolver::query query(Connection::hostname, Connection::port);
@@ -52,24 +55,28 @@ public:
 			socket.connect(*endpoint_iterator++, error);
 		}
 		if (error) {
-			std::cerr << "connection error" << std::endl;
-			websocket_connection->close(websocketpp::close::status::NORMAL, "cant establish tcp connection");
-		} else {
 #ifdef DEBUG
-			std::cout << "Starting a TCP client" << std::endl;
+			std::cerr << "connection error" << std::endl;
 #endif
-			start();
+			websocket_connection->close(websocketpp::close::status::NORMAL, "cant establish tcp connection");
 		}
+#ifdef DEBUG
+		std::cout << "Created new Connection at " << this << std::endl;
+#endif
 	}
 
 	~Connection(){
-		socket.cancel();
+#ifdef DEBUG
+		std::cout << "Begin of Destructor at " << this << std::endl;
+#endif
 		websocket_connection->close(websocketpp::close::status::NORMAL, "closing connection");
-		stop();
+#ifdef DEBUG
+		std::cout << "End of Destructor" << std::endl;
+#endif
 	}
 
 	void receive(const boost::system::error_code& error, size_t bytes_transferred) {
-		if (!error) {
+		if (!error && websocket_connection->get_state() == websocketpp::session::state::OPEN) {
 			std::string message(readBuffer.data(), bytes_transferred);
 #ifdef DEBUG
 			std::cout << "received TCP segment from broker " << bytes_transferred << " bytes: ";
@@ -83,7 +90,7 @@ public:
 			websocket_connection->send(message, websocketpp::frame::opcode::BINARY);
 			socket.async_receive(
 					boost::asio::buffer(readBuffer),
-					boost::bind(&Connection::receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+					boost::bind(&Connection::receive, shared_from_this(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 		}
 		else {
 #ifdef DEBUG
@@ -106,21 +113,30 @@ public:
 		try{
 			socket.write_some(boost::asio::buffer(message.c_str(), message.size()));
 		}catch(boost::system::system_error &e){
+#ifdef DEBUG
 			std::cerr << "Write Error in TCP connection to broker: " << e.what() << std::endl;
+#endif
 			websocket_connection->close(websocketpp::close::status::NORMAL, "cant close tcp connection");
 		}
 	}
 
 	void start() {
+#ifdef DEBUG
+		std::cout << "begin of start(). Connection at " << this << std::endl;
+#endif
 		socket.async_receive(
 				boost::asio::buffer(readBuffer),
-				boost::bind(&Connection::receive, this,	boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+				boost::bind(&Connection::receive, shared_from_this(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 #ifdef DEBUG
 		std::cout << "started async TCP receive" << std::endl;
 #endif
 	}
 
 	void stop() {
+#ifdef DEBUG
+		std::cout << "begin of stop(). Connection at " << this << std::endl;
+#endif
+		socket.cancel();
 		socket.close();
 #ifdef DEBUG
 		std::cout << "stopped async TCP receive" << std::endl;
@@ -147,9 +163,13 @@ public:
 #ifdef DEBUG
 			std::cout << "new connection, create new handler to process this message" << std::endl;
 #endif
-			connections[con] = new Connection(con, con->get_io_service());
-		} else
+			connections[con] = boost::shared_ptr<Connection>(new Connection(con, con->get_io_service()));
+			connections[con]->start();
+		}
+#ifdef DEBUG
+		else
 			std::cerr << "did I just reuse a connection pointer???" << std::endl;
+#endif
 	}
 
 	void on_message(connection_ptr con, message_ptr msg) {
@@ -158,35 +178,46 @@ public:
             std::cout << "received from websocket: " << msg->get_payload() << std::endl;
 #endif
 			connections[con]->send(msg->get_payload());
-		}else
+		}
+#ifdef DEBUG
+		else
 			std::cerr << "error receiving websocket message" << std::endl;
+#endif
 	}
 
 	void on_close(connection_ptr con) {
-		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
+		std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
 		if (it != connections.end()) {
-			delete connections[con];
+			connections[con]->stop();
+			connections[con].reset();
 			connections.erase(it);
 #ifdef DEBUG
 			std::cout << "closing connection, delete corresponding handler. handlers left:" << connections.size() << std::endl;
 #endif
-		} else
+		}
+#ifdef DEBUG
+		else
 			std::cerr << "can't remove connection on close" << std::endl;
+#endif
 	}
 
 	void on_fail(connection_ptr con) {
-		std::map<connection_ptr, Connection*>::iterator it = connections.find(con);
+		std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
 		if (it != connections.end()) {
-			delete connections[con];
+			connections[con]->stop();
+			connections[con].reset();
 			connections.erase(it);
 #ifdef DEBUG
 			std::cout << "something failed. deleted handler. number of handlers left:" << connections.size() << std::endl;
 #endif
-		} else
+		}
+#ifdef DEBUG
+		else
 			std::cerr << "there is nothing to clean up after something failed in the connection handler." << std::endl;
+#endif
 	}
 private:
-	std::map<connection_ptr, Connection*> connections;
+	std::map<connection_ptr, boost::shared_ptr<Connection> > connections;
 };
 
 int main(int argc, char* argv[]){
@@ -195,7 +226,10 @@ int main(int argc, char* argv[]){
 		("help", "produce this help message")
 		("websocketPort", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 1337")
 		("brokerHost", boost::program_options::value<std::string>(), "specify the host of the MQTT broker.\nDefault is localhost")
-		("brokerPort", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883");
+		("brokerPort", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883")
+		("version", "print version number and exit")
+		("verbose", "print websocket error messages");
+
 	boost::program_options::variables_map variables_map;
 	try {
 		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), variables_map);
@@ -203,6 +237,10 @@ int main(int argc, char* argv[]){
 		if (variables_map.find("help") != variables_map.end()) {
 			std::cout << description << "\n";
 			return 1;
+		}
+		if (variables_map.find("version") != variables_map.end()) {
+			std::cout << VERSION << "\n";
+			return 0;
 		}
 
 		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 1337;
@@ -217,8 +255,10 @@ int main(int argc, char* argv[]){
 
 		websocketServer.alog().unset_level(websocketpp::log::alevel::ALL);
 		websocketServer.elog().unset_level(websocketpp::log::elevel::ALL);
-		websocketServer.elog().set_level(websocketpp::log::elevel::RERROR);
-		websocketServer.elog().set_level(websocketpp::log::elevel::FATAL);
+		if (variables_map.find("verbose") != variables_map.end()) {
+			websocketServer.elog().set_level(websocketpp::log::elevel::RERROR);
+			websocketServer.elog().set_level(websocketpp::log::elevel::FATAL);
+		}
 		websocketServer.listen(boost::asio::ip::tcp::v4(), websocketPort, 1);
 	} catch(boost::program_options::unknown_option & e){
 		std::cerr << e.what() << std::endl;
