@@ -33,7 +33,7 @@
 #include <sstream>
 #include <iomanip>
 
-#define VERSION "MQTT VERSION BUILD 0.3"
+#define VERSION "MQTT VERSION BUILD 0.4"
 
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware
@@ -97,6 +97,8 @@ public:
 			std::cout << "there is nothing more -> sending it to the websocket." << std::endl << std::endl;
 #endif
 			websocket_connection->send(mqttMessage,	websocketpp::frame::opcode::BINARY);
+			// wait for new message
+			start();
 			} else if(mqtt_header[1] & 0x80){ // the length was not 0 and we need to read more remaining length bytes. receive_remaining_length will do it ...
 #ifdef DEBUG
 				std::cout << "need to read extra bytes for remaining length field" << std::endl << std::endl;
