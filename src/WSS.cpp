@@ -33,7 +33,7 @@
 #include <sstream>
 #include <iomanip>
 
-#define VERSION "MQTT VERSION BUILD 0.4"
+#define VERSION "MQTT VERSION BUILD 0.5"
 
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware
@@ -103,7 +103,11 @@ public:
 #ifdef DEBUG
 				std::cout << "need to read extra bytes for remaining length field" << std::endl << std::endl;
 #endif
+				multiplier = 1;
 				remaining_length = mqtt_header[1] & 0x7F;
+#ifdef DEBUG
+				std::cout << "length initially is: " << remaining_length << std::endl;
+#endif
 				boost::asio::async_read(
 						socket,
 						boost::asio::buffer(&next_byte, 1),
@@ -158,7 +162,6 @@ public:
 	 * while ((digit AND 128) != 0)
 	 */
 	void receive_remaining_length(const boost::system::error_code& error, size_t bytes_transferred){
-		static unsigned int multiplier = 1;
 			if (!error && bytes_transferred == 1 && websocket_connection->get_state() == websocketpp::session::state::OPEN) {
 #ifdef DEBUG
 			std::cout << "received one more byte with remaining length: "
@@ -166,12 +169,15 @@ public:
 					<< (short)next_byte << std::endl << std::dec;
 #endif
 				mqttMessage.append(std::string(&next_byte, 1));
-				if(next_byte & 0x80){ // there is still a continuation bit and we need to go on by calling this method again.
 #ifdef DEBUG
-					std::cout << "there is still work to do" << mqtt_header[1] << std::endl << std::endl;
+				std::cout << "there is still work to do" << mqtt_header[1] << std::endl << std::endl;
 #endif
-					remaining_length += (next_byte & 0x7F) * multiplier;
-					multiplier *= 128;
+				multiplier *= 128;
+				remaining_length += (next_byte & 0x7F) * multiplier;
+#ifdef DEBUG
+				std::cout << "remaining length is now: " << remaining_length << std::endl;
+#endif
+				if(next_byte & 0x80){ // there is still a continuation bit and we need to go on by calling this method again.
 					boost::asio::async_read(
 							socket,
 							boost::asio::buffer(&next_byte, 1),
@@ -184,8 +190,10 @@ public:
 							)
 					);
 				} else { // this was the last one and we now know the length of the remaining message. receive_mqtt_message will now do the rest
+#ifdef DEBUG
+					std::cout << "length finally is: "  << remaining_length << std::endl;
+#endif
 					readBuffer.resize(remaining_length);
-					multiplier = 1;
 					boost::asio::async_read(
 							socket,
 							boost::asio::buffer(readBuffer, remaining_length),
@@ -294,6 +302,7 @@ private:
 	char next_byte;
 	unsigned int remaining_length;
 	std::string mqttMessage;
+	unsigned int multiplier;
 };
 
 std::string Connection::hostname;
