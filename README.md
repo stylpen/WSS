@@ -12,7 +12,7 @@ The goal was initially to create a bridge that is content INsensitive and only t
 However, this approach is not ideal for MQTT as some JavaScript clients (including the reference implementation from Paho) can't handle multiple MQTT messages arriving at once (or fragmented messages arriving partly) in a WebSocket message.
 In the mqtt branch of WSS is a version that reads the MQTT header and determins the length of the message. It uses that information to send exactly ONE MQTT message to the WebSocket client so that the JS libraries won't have problems.
 
-The Websocket server uses websocket++ (https://github.com/zaphoyd/websocketpp) and the Boost C++ Libraries (http://www.boost.org/).
+The Websocket server uses version 0.2 of websocket++ (https://github.com/zaphoyd/websocketpp/tree/0.2.x) and the Boost C++ Libraries (http://www.boost.org/).
 
 It was developed using the eclipse IDE.
 The project configuration assumes that the boost and websocket++ header files and libraries are located in /usr/local/include and /usr/local/lib respectively. For boost headers and libs is searched in /usr/include and /usr/lib. If that doesn't match your setup just edit the eclipse project properties or build manually.
