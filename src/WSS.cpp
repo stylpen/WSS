@@ -25,6 +25,7 @@
  *
  */
 
+#include <websocketpp/sockets/tls.hpp>
 #include <websocketpp/websocketpp.hpp>
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
@@ -39,9 +40,12 @@
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware
 // Its send() method sends stuff (from the websocket) to the TCP endpoint
 
+template <typename endpoint_type> // plain or tls
 class Connection : public boost::enable_shared_from_this<Connection>{
 public:
-	Connection(websocketpp::server::handler::connection_ptr con, boost::asio::io_service &io_service) :
+//	typedef Connection<endpoint_type> me;
+	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
+	Connection(connection_ptr con, boost::asio::io_service &io_service) :
 		websocket_connection(con), socket(io_service), readBuffer(1024), mqttMessage(""){
 #ifdef DEBUG
 		std::cout << "In Connection Constructor: creating new connection object" << std::endl;
@@ -309,8 +313,13 @@ std::string Connection::hostname;
 std::string Connection::port;
 
 // The WebSocket++ handler 
-class ServerHandler: public websocketpp::server::handler {
+template <typename endpoint_type> // plain or tls
+class ServerHandler: public endpoint_type::handler {
 public:
+	typedef ServerHandler<endpoint_type> me;
+	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
+	typedef typename endpoint_type::handler::message_ptr message_ptr;
+
 	void on_open(connection_ptr con){
 #ifdef DEBUG
 		std::cerr << "In on_open" << std::endl << "   WEBSOCKET CONNECTION POINTER address is: " << con << std::endl;
@@ -348,7 +357,7 @@ public:
 #ifdef DEBUG
 		std::cerr << "Start of on_close() of Websocket. Try to delete Connection" << std::endl;
 #endif
-		std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
+		typename std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
 		if (it != connections.end()) {
 #ifdef DEBUG
 			std::cerr << "Will delete Connection if it exists" << std::endl;
@@ -372,7 +381,7 @@ public:
 #ifdef DEBUG
 		std::cerr << "Start of on_fail() of Websocket. Try to delete Connection" << std::endl;
 #endif
-		std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
+		typename std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
 		if (it != connections.end()) {
 #ifdef DEBUG
 			std::cerr << "Will delete Connection if it exists" << std::endl;
@@ -392,9 +401,43 @@ public:
 #endif
 	}
 
+	std::string get_password() const {
+	        return "test";
+	    }
+
+	boost::shared_ptr<boost::asio::ssl::context> on_tls_init() {
+		// create a tls context, init, and return.
+		boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1));
+		try {
+			context->set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
+			context->set_password_callback(boost::bind(&me::get_password, this));
+			context->use_certificate_chain_file(certChain);
+			context->use_private_key_file(keyFile, boost::asio::ssl::context::pem);
+			context->use_tmp_dh_file(dhFile);
+		} catch (std::exception& e) {
+			std::cout << e.what() << std::endl;
+		}
+		return context;
+	}
+
+	void http(connection_ptr con) {
+		con->set_body("<!DOCTYPE html><html><head><title>WebSocket++ TLS certificate test</title></head><body><h1>WebSocket++ TLS certificate test</h1><p>This is an HTTP(S) page served by a WebSocket++ server for the purposes of confirming that certificates are working since browsers normally silently ignore certificate issues.</p></body></html>");
+	}
+
+	static std::string keyFile;
+	static std::string certChain;
+	static std::string dhFile;
+
 private:
-	std::map<connection_ptr, boost::shared_ptr<Connection> > connections;
+	typename std::map<connection_ptr, boost::shared_ptr<Connection> > connections;
 };
+
+template <typename endpoint_type> // plain or tls
+std::string ServerHandler<endpoint_type>::keyFile;
+template <typename endpoint_type> // plain or tls
+std::string ServerHandler<endpoint_type>::certChain;
+template <typename endpoint_type> // plain or tls
+std::string ServerHandler<endpoint_type>::dhFile;
 
 int main(int argc, char* argv[]){
 	boost::program_options::options_description description("Available options");
@@ -403,6 +446,11 @@ int main(int argc, char* argv[]){
 		("websocketPort", boost::program_options::value<unsigned short>(), "specify the port where the websocket server should listen.\nDefault is 18883")
 		("brokerHost", boost::program_options::value<std::string>(), "specify the host of the MQTT broker.\nDefault is localhost")
 		("brokerPort", boost::program_options::value<std::string>(), "specify the port where the MQTT broker listens.\nDefault is 1883")
+		("ws-keyfile", boost::program_options::value<std::string>(), "server key file for websocket side")
+		("ws-chainfile", boost::program_options::value<std::string>(), "keychain for the websocket server key")
+		("ws-dh-file", boost::program_options::value<std::string>(), "diffie- hellman parameter for websocket tls connection")
+		("broker-certfile", boost::program_options::value<std::string>(), "certificate to use connection to MQTT broker")
+		("tls-version", boost::program_options::value<std::string>(), "TLS version for connection to MQTT broker")
 		("version", "print version number and exit")
 		("verbose", "print websocket error messages");
 
@@ -423,19 +471,30 @@ int main(int argc, char* argv[]){
 		Connection::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
 		Connection::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 
-		websocketpp::server::handler::ptr serverHandler = websocketpp::server::handler::ptr(new ServerHandler());
-		websocketpp::server websocketServer(serverHandler);
 
-		boost::asio::signal_set signals(websocketServer.get_io_service(), SIGINT, SIGTERM);
-		signals.async_wait(boost::bind(&websocketpp::server::stop, boost::ref(websocketServer), true,  websocketpp::close::status::NORMAL, "websocket server quit"));
+		if(variables_map.find("tls-version") != variables_map.end()){
+			ServerHandler<websocketpp::server_tls>::keyFile = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
+			ServerHandler<websocketpp::server_tls>::certChain = variables_map.find("ws-chainfile") != variables_map.end() ? variables_map["ws-chainfile"].as<std::string>() : "";
+			ServerHandler<websocketpp::server_tls>::dhFile = variables_map.find("ws-dh-file") != variables_map.end() ? variables_map["ws-dh-file"].as<std::string>() : "";
 
-		websocketServer.alog().unset_level(websocketpp::log::alevel::ALL);
-		websocketServer.elog().unset_level(websocketpp::log::elevel::ALL);
-		if (variables_map.find("verbose") != variables_map.end()) {
-			websocketServer.elog().set_level(websocketpp::log::elevel::RERROR);
-			websocketServer.elog().set_level(websocketpp::log::elevel::FATAL);
+			websocketpp::server_tls::handler::ptr serverHandler(new ServerHandler<websocketpp::server_tls>());
+			websocketpp::server_tls websocketServer(serverHandler);
+
+			boost::asio::signal_set signals(websocketServer.get_io_service(), SIGINT, SIGTERM);
+			signals.async_wait(boost::bind(&websocketpp::server_tls::stop, boost::ref(websocketServer), true,  websocketpp::close::status::NORMAL, "websocket server quit"));
+
+			websocketServer.alog().unset_level(websocketpp::log::alevel::ALL);
+			websocketServer.elog().unset_level(websocketpp::log::elevel::ALL);
+			if (variables_map.find("verbose") != variables_map.end()) {
+				websocketServer.elog().set_level(websocketpp::log::elevel::RERROR);
+				websocketServer.elog().set_level(websocketpp::log::elevel::FATAL);
+			}
+			websocketServer.listen(boost::asio::ip::tcp::v4(), websocketPort, 1);
+		}else{
+
 		}
-		websocketServer.listen(boost::asio::ip::tcp::v4(), websocketPort, 1);
+
+
 	} catch(boost::program_options::unknown_option & e){
 		std::cerr << e.what() << std::endl;
 		std::cout << description << "\n";
