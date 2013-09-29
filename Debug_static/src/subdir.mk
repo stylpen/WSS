@@ -6,11 +6,11 @@
 CPP_SRCS += \
 ../src/WSS.cpp 
 
-OBJS += \
-./src/WSS.o 
-
 CPP_DEPS += \
 ./src/WSS.d 
+
+OBJS += \
+./src/WSS.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes

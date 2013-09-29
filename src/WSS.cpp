@@ -34,7 +34,7 @@
 #include <sstream>
 #include <iomanip>
 
-#define VERSION "MQTT VERSION BUILD 0.5"
+#define VERSION "TLS MQTT VERSION BUILD 0.6"
 
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware

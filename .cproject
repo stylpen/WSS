@@ -44,6 +44,8 @@
 								</option>
 								<option id="gnu.cpp.link.option.libs.303799181" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="pthread"/>
+									<listOptionValue builtIn="false" value="crypto"/>
+									<listOptionValue builtIn="false" value="ssl"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1347418772" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.userobjs.1229548353" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
@@ -113,6 +115,8 @@
 								<option id="gnu.cpp.link.option.paths.2000166928" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths"/>
 								<option id="gnu.cpp.link.option.libs.1132511540" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="pthread"/>
+									<listOptionValue builtIn="false" value="crypto"/>
+									<listOptionValue builtIn="false" value="ssl"/>
 								</option>
 								<option id="gnu.cpp.link.option.userobjs.625825498" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="/usr/local/lib/libwebsocketpp.a"/>
