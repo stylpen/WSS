@@ -492,7 +492,21 @@ int main(int argc, char* argv[]){
 			}
 			websocketServer.listen(boost::asio::ip::tcp::v4(), websocketPort, 1);
 		}else{
+			Connection<websocketpp::server>::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
+			Connection<websocketpp::server>::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
+			websocketpp::server::handler::ptr serverHandler(new ServerHandler<websocketpp::server>());
+			websocketpp::server websocketServer(serverHandler);
 
+			boost::asio::signal_set signals(websocketServer.get_io_service(), SIGINT, SIGTERM);
+			signals.async_wait(boost::bind(&websocketpp::server::stop, boost::ref(websocketServer), true,  websocketpp::close::status::NORMAL, "websocket server quit"));
+
+			websocketServer.alog().unset_level(websocketpp::log::alevel::ALL);
+			websocketServer.elog().unset_level(websocketpp::log::elevel::ALL);
+			if (variables_map.find("verbose") != variables_map.end()) {
+				websocketServer.elog().set_level(websocketpp::log::elevel::RERROR);
+				websocketServer.elog().set_level(websocketpp::log::elevel::FATAL);
+			}
+			websocketServer.listen(boost::asio::ip::tcp::v4(), websocketPort, 1);
 		}
 
 
