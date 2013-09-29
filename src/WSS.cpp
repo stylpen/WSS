@@ -43,8 +43,9 @@
 template <typename endpoint_type> // plain or tls
 class Connection : public boost::enable_shared_from_this<Connection<endpoint_type> >{
 public:
-	typedef Connection<endpoint_type> me;
+
 	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
+
 	Connection(connection_ptr con, boost::asio::io_service &io_service) :
 		websocket_connection(con), socket(io_service), readBuffer(1024), mqttMessage(""){
 #ifdef DEBUG
@@ -297,6 +298,7 @@ public:
 
 	static std::string hostname;
 	static std::string port;
+	static std::string tlsVersion;
 
 private:
 	connection_ptr websocket_connection;
@@ -313,6 +315,8 @@ template <typename endpoint_type> // plain or tls
 std::string Connection<endpoint_type>::hostname;
 template <typename endpoint_type> // plain or tls
 std::string Connection<endpoint_type>::port;
+template <typename endpoint_type> // plain or tls
+std::string Connection<endpoint_type>::tlsVersion;
 
 // The WebSocket++ handler 
 template <typename endpoint_type> // plain or tls
@@ -409,7 +413,7 @@ public:
 
 	boost::shared_ptr<boost::asio::ssl::context> on_tls_init() {
 		// create a tls context, init, and return.
-		boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1));
+		boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
 		try {
 			context->set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
 			context->set_password_callback(boost::bind(&me::get_password, this));
@@ -429,6 +433,7 @@ public:
 	static std::string keyFile;
 	static std::string certChain;
 	static std::string dhFile;
+	static std::string tlsVersion;
 
 private:
 	typename std::map<connection_ptr, boost::shared_ptr<Connection<endpoint_type> > > connections;
@@ -474,6 +479,8 @@ int main(int argc, char* argv[]){
 		if(variables_map.find("tls-version") != variables_map.end()){
 			Connection<websocketpp::server_tls>::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
 			Connection<websocketpp::server_tls>::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
+			Connection<websocketpp::server_tls>::tlsVersion = variables_map.find("tls-version") != variables_map.end() ? variables_map["tls-version"].as<std::string>() : "1883";
+
 			ServerHandler<websocketpp::server_tls>::keyFile = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
 			ServerHandler<websocketpp::server_tls>::certChain = variables_map.find("ws-chainfile") != variables_map.end() ? variables_map["ws-chainfile"].as<std::string>() : "";
 			ServerHandler<websocketpp::server_tls>::dhFile = variables_map.find("ws-dh-file") != variables_map.end() ? variables_map["ws-dh-file"].as<std::string>() : "";
