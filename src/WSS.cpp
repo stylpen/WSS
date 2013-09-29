@@ -41,9 +41,9 @@
 // Its send() method sends stuff (from the websocket) to the TCP endpoint
 
 template <typename endpoint_type> // plain or tls
-class Connection : public boost::enable_shared_from_this<Connection>{
+class Connection : public boost::enable_shared_from_this<Connection<endpoint_type> >{
 public:
-//	typedef Connection<endpoint_type> me;
+	typedef Connection<endpoint_type> me;
 	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
 	Connection(connection_ptr con, boost::asio::io_service &io_service) :
 		websocket_connection(con), socket(io_service), readBuffer(1024), mqttMessage(""){
@@ -118,7 +118,7 @@ public:
 						boost::asio::transfer_at_least(1),
 						boost::bind(
 								&Connection::receive_remaining_length,
-								shared_from_this(),
+								this->shared_from_this(),
 								boost::asio::placeholders::error,
 								boost::asio::placeholders::bytes_transferred
 						)
@@ -135,7 +135,7 @@ public:
 						boost::asio::transfer_at_least(remaining_length),
 						boost::bind(
 								&Connection::receive_mqtt_message,
-								shared_from_this(),
+								this->shared_from_this(),
 								boost::asio::placeholders::error,
 								boost::asio::placeholders::bytes_transferred
 						)
@@ -188,7 +188,7 @@ public:
 							boost::asio::transfer_at_least(1),
 							boost::bind(
 									&Connection::receive_remaining_length,
-									shared_from_this(),
+									this->shared_from_this(),
 									boost::asio::placeholders::error,
 									boost::asio::placeholders::bytes_transferred
 							)
@@ -204,7 +204,7 @@ public:
 							boost::asio::transfer_at_least(remaining_length),
 							boost::bind(
 									&Connection::receive_mqtt_message,
-									shared_from_this(),
+									this->shared_from_this(),
 									boost::asio::placeholders::error,
 									boost::asio::placeholders::bytes_transferred
 							)
@@ -274,7 +274,7 @@ public:
 				boost::asio::transfer_at_least(2),
 				boost::bind(
 						&Connection::receive_header,
-						shared_from_this(),
+						this->shared_from_this(),
 						boost::asio::placeholders::error,
 						boost::asio::placeholders::bytes_transferred
 				)
@@ -299,7 +299,7 @@ public:
 	static std::string port;
 
 private:
-	websocketpp::server::handler::connection_ptr websocket_connection;
+	connection_ptr websocket_connection;
 	boost::asio::ip::tcp::socket socket;
 	std::vector<char> readBuffer;
 	char mqtt_header[2];
@@ -309,8 +309,10 @@ private:
 	unsigned int multiplier;
 };
 
-std::string Connection::hostname;
-std::string Connection::port;
+template <typename endpoint_type> // plain or tls
+std::string Connection<endpoint_type>::hostname;
+template <typename endpoint_type> // plain or tls
+std::string Connection<endpoint_type>::port;
 
 // The WebSocket++ handler 
 template <typename endpoint_type> // plain or tls
@@ -328,7 +330,7 @@ public:
 #ifdef DEBUG
 			std::cout << "new connection, create new Connection handler to process this message" << std::endl;
 #endif
-			connections[con] = boost::shared_ptr<Connection>(new Connection(con, con->get_io_service()));
+			connections[con] = boost::shared_ptr<Connection<endpoint_type> >(new Connection<endpoint_type>(con, con->get_io_service()));
 			connections[con]->start();
 #ifdef DEBUG
 		std::cerr << "Added new Connection to map" << std::endl << "   Connection address is: " << connections[con] << std::endl;
@@ -357,7 +359,7 @@ public:
 #ifdef DEBUG
 		std::cerr << "Start of on_close() of Websocket. Try to delete Connection" << std::endl;
 #endif
-		typename std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
+		typename std::map<connection_ptr, boost::shared_ptr<Connection<endpoint_type> > >::iterator it = connections.find(con);
 		if (it != connections.end()) {
 #ifdef DEBUG
 			std::cerr << "Will delete Connection if it exists" << std::endl;
@@ -381,7 +383,7 @@ public:
 #ifdef DEBUG
 		std::cerr << "Start of on_fail() of Websocket. Try to delete Connection" << std::endl;
 #endif
-		typename std::map<connection_ptr, boost::shared_ptr<Connection> >::iterator it = connections.find(con);
+		typename std::map<connection_ptr, boost::shared_ptr<Connection<endpoint_type> > >::iterator it = connections.find(con);
 		if (it != connections.end()) {
 #ifdef DEBUG
 			std::cerr << "Will delete Connection if it exists" << std::endl;
@@ -429,7 +431,7 @@ public:
 	static std::string dhFile;
 
 private:
-	typename std::map<connection_ptr, boost::shared_ptr<Connection> > connections;
+	typename std::map<connection_ptr, boost::shared_ptr<Connection<endpoint_type> > > connections;
 };
 
 template <typename endpoint_type> // plain or tls
@@ -468,11 +470,10 @@ int main(int argc, char* argv[]){
 		}
 
 		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 18883;
-		Connection::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
-		Connection::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
-
 
 		if(variables_map.find("tls-version") != variables_map.end()){
+			Connection<websocketpp::server_tls>::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
+			Connection<websocketpp::server_tls>::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 			ServerHandler<websocketpp::server_tls>::keyFile = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
 			ServerHandler<websocketpp::server_tls>::certChain = variables_map.find("ws-chainfile") != variables_map.end() ? variables_map["ws-chainfile"].as<std::string>() : "";
 			ServerHandler<websocketpp::server_tls>::dhFile = variables_map.find("ws-dh-file") != variables_map.end() ? variables_map["ws-dh-file"].as<std::string>() : "";
