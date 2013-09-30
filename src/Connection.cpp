@@ -29,7 +29,7 @@ public:
 		std::cout << "In Connection Constructor: creating new connection object" << std::endl;
 #endif
 		socket = NULL;
-		if(Connection::tlsVersion == ""){
+		if(Connection::tlsVersion == "" || Connection::brokerCert == ""){
 			try {
 				socket = Socket::create(io_service, NULL, Connection::hostname, Connection::port);
 			} catch(boost::system::system_error &e){

@@ -11,15 +11,11 @@ TCP traffic from the broker is analyzed so that only complete MQTT messages will
 It uses version 0.2 of websocket++ (https://github.com/zaphoyd/websocketpp/tree/0.2.x) and the Boost C++ Libraries (http://www.boost.org/).
 
 The Websocket Server was developed using the eclipse IDE.
-It assumes the boost and websocket++ header files and libraries are located in /usr/local/include and /usr/local/lib respectively. Boost headers are expected to be in /usr/include/ and libs in /usr/lib/. If that doesn't match your setup just edit the eclipse project properties.
+It assumes the boost and websocket++ header files and libraries are located in /usr/local/include and /usr/local/lib respectively. Boost headers are expected to be in /usr/include/boost and libs in /usr/lib/. If that doesn't match your setup just edit the eclipse project properties and/or makefile.
 
-You can also build manually:
-To create an executale that uses shared libraries run
+```$ make all``` will compile debug and release versions. For more details see makefile
 
-g++ -o WSS_shared -I/usr/local/include -L/usr/local/lib -lpthread -lboost_program_options -lboost_regex -lboost_thread -lboost_system -lwebsocketpp  src/WSS.cpp -O3 -Wall
+Sample invocation
 
-Make sure that you have all symlinks you need from libwebsocketpp.so.* to libwebsocketpp.so and to libwebsocketpp.so.0 and that the LD_LIBRARY_PATH contains the shared libraries when you execute the program.
-To create a static linked executable run
-
-g++ -o WSS_static src/WSS.cpp -I/usr/local/include  /usr/local/lib/libwebsocketpp.a /usr/local/lib/libboost_thread.a /usr/local/lib/libboost_regex.a /usr/local/lib/libboost_system.a /usr/local/lib/libboost_program_options.a -lpthread -O3 -Wall
+```$ ./WSS_release --brokerHost  192.168.11.31 --ws-keyfile ssl/server.key --ws-chainfile ssl/server.pem  --ws-dh-file ssl/dh.pem --broker-cert ssl/ca.pem``` this will use TLS on Websocket side and PLAIN TCP without encryprion on the MQTT broker side (to use TLS on broker side too --tls-version must be specified - but I haven't tested that yet and the given value is ignored anyway at the moment)
 
