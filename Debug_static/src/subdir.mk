@@ -4,12 +4,27 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/Connection.cpp \
+../src/PlainSocket.cpp \
+../src/ServerHandler.cpp \
+../src/Socket.cpp \
+../src/TLSSocket.cpp \
 ../src/WSS.cpp 
 
 CPP_DEPS += \
+./src/Connection.d \
+./src/PlainSocket.d \
+./src/ServerHandler.d \
+./src/Socket.d \
+./src/TLSSocket.d \
 ./src/WSS.d 
 
 OBJS += \
+./src/Connection.o \
+./src/PlainSocket.o \
+./src/ServerHandler.o \
+./src/Socket.o \
+./src/TLSSocket.o \
 ./src/WSS.o 
 
 
