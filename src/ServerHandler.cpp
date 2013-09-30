@@ -19,7 +19,7 @@ public:
 #endif
 		if (connections.find(con) == connections.end()) {
 #ifdef DEBUG
-			std::cout << "new connection, create new Connection handler to process this message" << std::endl;
+			std::cerr << "new connection, create new Connection handler to process this message" << std::endl;
 #endif
 			connections[con] = boost::shared_ptr<Connection<endpoint_type> >(new Connection<endpoint_type>(con, con->get_io_service()));
 			connections[con]->start();
@@ -104,9 +104,10 @@ public:
 		try {
 			context->set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
 			context->set_password_callback(boost::bind(&me::get_password, this));
-			context->use_certificate_chain_file(certChain);
-			context->use_private_key_file(keyFile, boost::asio::ssl::context::pem);
-			context->use_tmp_dh_file(dhFile);
+			context->use_certificate_chain_file(ServerHandler::certChain);
+			context->use_private_key_file(ServerHandler::keyFile, boost::asio::ssl::context::pem);
+			if(ServerHandler::dhFile != "")
+				context->use_tmp_dh_file(ServerHandler::dhFile);
 		} catch (std::exception& e) {
 			std::cout << e.what() << std::endl;
 		}

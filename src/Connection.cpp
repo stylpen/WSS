@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <iostream>
 #include "Socket.h"
+#include "PlainSocket.h"
+#include "TLSSocket.h"
 
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
@@ -26,25 +28,22 @@ public:
 #ifdef DEBUG
 		std::cout << "In Connection Constructor: creating new connection object" << std::endl;
 #endif
-		boost::asio::ip::tcp::resolver resolver(io_service);
-		boost::asio::ip::tcp::resolver::query query(Connection::hostname, Connection::port);
-		boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-		boost::asio::ip::tcp::resolver::iterator end;
-		boost::system::error_code error = boost::asio::error::host_not_found;
-		socket = Socket::create(io_service, NULL);
-		while (error && endpoint_iterator != end) {
-			socket->getSocketForAsio().close();
-			socket->getSocketForAsio().connect(*endpoint_iterator++, error);
+		socket = NULL;
+		if(Connection::tlsVersion == ""){
+			try {
+				socket = Socket::create(io_service, NULL, Connection::hostname, Connection::port);
+			} catch(boost::system::system_error &e){
+				std::cerr << "foo " << e.what() << std::endl;
+			}
+		} else{
+			try{
+				boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv1_client);
+				ctx.load_verify_file(Connection::brokerCert);
+				socket = Socket::create(io_service, &ctx, Connection::hostname, Connection::port);
+			} catch(boost::system::system_error &e){
+				std::cerr << "bar " << e.what() << std::endl;
+			}
 		}
-		if (error) {
-#ifdef DEBUG
-			std::cerr << "connection error" << std::endl;
-#endif
-			websocket_connection->close(websocketpp::close::status::NORMAL, "can't establish tcp connection");
-		}
-#ifdef DEBUG
-		std::cout << "Created new Connection at " << this << std::endl;
-#endif
 	}
 
 	~Connection(){
@@ -245,7 +244,8 @@ public:
 #ifdef DEBUG
 		std::cout << "Begin of start() in Connection at: " << this << std::endl;
 #endif
-		boost::asio::async_read(
+		if(socket){
+			boost::asio::async_read(
 				socket->getSocketForAsio(),
 				boost::asio::buffer(mqtt_header, 2),
 				boost::asio::transfer_at_least(2),
@@ -259,14 +259,25 @@ public:
 #ifdef DEBUG
 		std::cout << "  started async TCP read" << std::endl;
 #endif
+		} else {
+#ifdef DEBUG
+		std::cout << "  failed to start async read because there is no tcp socket to broker" << std::endl;
+#endif
+		if(websocket_connection)
+			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem starting");
+		}
+
 	}
 
 	void stop(){
 #ifdef DEBUG
 		std::cerr << "Beginning of stop() in Connection at " << this << std::endl;
 #endif
-		socket->getSocketForAsio().cancel();
-		socket->getSocketForAsio().close();
+		if(socket){
+			socket->getSocketForAsio().cancel();
+			socket->getSocketForAsio().close();
+			delete socket;
+		}
 #ifdef DEBUG
 		std::cout << "   stopped async TCP receive" << std::endl;
 #endif
@@ -274,6 +285,7 @@ public:
 
 	static std::string hostname;
 	static std::string port;
+	static std::string brokerCert;
 	static std::string tlsVersion;
 
 private:
@@ -287,11 +299,13 @@ private:
 	unsigned int multiplier;
 };
 
-template <typename endpoint_type> // plain or tls
+template <typename endpoint_type>
 std::string Connection<endpoint_type>::hostname;
-template <typename endpoint_type> // plain or tls
+template <typename endpoint_type>
 std::string Connection<endpoint_type>::port;
-template <typename endpoint_type> // plain or tls
+template <typename endpoint_type>
+std::string Connection<endpoint_type>::brokerCert;
+template <typename endpoint_type>
 std::string Connection<endpoint_type>::tlsVersion;
 
 #endif /* CONNECTION_H_*/

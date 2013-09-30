@@ -2,11 +2,11 @@
 #include "PlainSocket.h"
 #include "TLSSocket.h"
 
-Socket* Socket::create(boost::asio::io_service& iIoService, boost::asio::ssl::context *ipSslContext) {
+Socket* Socket::create(boost::asio::io_service& iIoService, boost::asio::ssl::context* ipSslContext, std::string hostname, std::string port) {
 	if (ipSslContext == NULL) {
-		return new Plain_Socket(iIoService);
+		return new Plain_Socket(iIoService, hostname, port);
 	}
-   return new TLS_Socket(iIoService, *ipSslContext);
+   return new TLS_Socket(iIoService, *ipSslContext, hostname, port);
 }
 
 Socket::~Socket(){}
