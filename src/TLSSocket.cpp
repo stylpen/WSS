@@ -1,24 +1,22 @@
-/*
- * TLSSocket.cpp
- *
- *  Created on: Sep 30, 2013
- *      Author: stephan
- */
-
 #include "TLSSocket.h"
+#include <iostream>
 
-TLS_Socket::TLS_Socket(boost::asio::io_service& iIoService, boost::asio::ssl::context& iSslContext, std::string hostname, std::string port) :
+TLS_Socket::TLS_Socket(boost::asio::io_service& iIoService, boost::asio::ssl::context& iSslContext) :
 		boost::asio::ssl::stream<boost::asio::ip::tcp::socket>(iIoService, iSslContext) {
+}
+
+void TLS_Socket::do_connect(){
+	std::cerr << "in do connect of tls socket" << std::endl;
 	set_verify_mode(boost::asio::ssl::verify_none);
-	set_verify_callback(boost::bind(&TLS_Socket::verify_certificate, this, _1, _2));
-	boost::asio::ip::tcp::resolver resolver(iIoService);
-	boost::asio::ip::tcp::resolver::query query(hostname, port);
+	set_verify_callback(boost::bind(&TLS_Socket::verify_certificate, shared_from_this(), _1, _2));
+	boost::asio::ip::tcp::resolver resolver(get_io_service());
+	boost::asio::ip::tcp::resolver::query query(Socket::hostname, Socket::port);
 	boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 #ifdef DEBUG
 	std::cerr << "will start async connect" << std::endl;
 #endif
 	boost::asio::async_connect(lowest_layer(), endpoint_iterator,
-	        boost::bind(&TLS_Socket::handle_connect, this,
+	        boost::bind(&TLS_Socket::handle_connect, shared_from_this(),
 	          boost::asio::placeholders::error));
 }
 
@@ -39,9 +37,10 @@ bool TLS_Socket::verify_certificate(bool preverified, boost::asio::ssl::verify_c
 	}
 
 void TLS_Socket::handle_connect(const boost::system::error_code& error){
+		std::cerr << "in handle connect of tls socket" << std::endl;
 		if (!error){
 			async_handshake(boost::asio::ssl::stream_base::client,
-					boost::bind(&TLS_Socket::handle_handshake, this,
+					boost::bind(&TLS_Socket::handle_handshake, shared_from_this(),
 							boost::asio::placeholders::error));
 		} else {
 			std::cerr << "Connect failed: " << error.message() << std::endl;
@@ -61,4 +60,3 @@ void TLS_Socket::handle_handshake(const boost::system::error_code& error){
 boost::asio::ip::tcp::socket& TLS_Socket::getSocketForAsio() {
         return next_layer();
     }
-

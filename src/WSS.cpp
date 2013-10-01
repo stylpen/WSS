@@ -64,10 +64,10 @@ int main(int argc, char* argv[]){
 		}
 
 		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 18883;
+		Socket::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
+		Socket::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 
 		if(variables_map.find("ws-keyfile") != variables_map.end() && variables_map.find("ws-chainfile") != variables_map.end()){
-			Connection<websocketpp::server_tls>::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
-			Connection<websocketpp::server_tls>::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 			Connection<websocketpp::server_tls>::brokerCert = variables_map.find("broker-certfile") != variables_map.end() ? variables_map["broker-certfile"].as<std::string>() : "";
 			Connection<websocketpp::server_tls>::tlsVersion = variables_map.find("tls-version") != variables_map.end() ? variables_map["tls-version"].as<std::string>() : "";
 
@@ -89,8 +89,6 @@ int main(int argc, char* argv[]){
 			}
 			websocketServer.listen(boost::asio::ip::tcp::v4(), websocketPort, 1);
 		}else{
-			Connection<websocketpp::server>::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
-			Connection<websocketpp::server>::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 			Connection<websocketpp::server>::brokerCert = variables_map.find("broker-certfile") != variables_map.end() ? variables_map["broker-certfile"].as<std::string>() : "";
 			Connection<websocketpp::server>::tlsVersion = variables_map.find("tls-version") != variables_map.end() ? variables_map["tls-version"].as<std::string>() : "";
 
