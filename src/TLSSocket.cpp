@@ -7,17 +7,24 @@ TLS_Socket::TLS_Socket(boost::asio::io_service& iIoService, boost::asio::ssl::co
 
 void TLS_Socket::do_connect(){
 	std::cerr << "in do connect of tls socket" << std::endl;
-	set_verify_mode(boost::asio::ssl::verify_none);
-	set_verify_callback(boost::bind(&TLS_Socket::verify_certificate, shared_from_this(), _1, _2));
-	boost::asio::ip::tcp::resolver resolver(get_io_service());
-	boost::asio::ip::tcp::resolver::query query(Socket::hostname, Socket::port);
-	boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+	try{
+		set_verify_mode(boost::asio::ssl::verify_none);
+		set_verify_callback(boost::bind(&TLS_Socket::verify_certificate, shared_from_this(), _1, _2));
+		boost::asio::ip::tcp::resolver resolver(get_io_service());
+		boost::asio::ip::tcp::resolver::query query(Socket::hostname, Socket::port);
+		boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 #ifdef DEBUG
-	std::cerr << "will start async connect" << std::endl;
+		std::cerr << "will start async connect" << std::endl;
 #endif
-	boost::asio::async_connect(lowest_layer(), endpoint_iterator,
+		boost::asio::async_connect(lowest_layer(), endpoint_iterator,
 	        boost::bind(&TLS_Socket::handle_connect, shared_from_this(),
 	          boost::asio::placeholders::error));
+	}catch(std::exception &e){
+#ifdef DEBUG
+		std::cerr << "exception in connect: " << e.what() << std::endl;
+		on_fail();
+#endif
+	}
 }
 
 bool TLS_Socket::verify_certificate(bool preverified, boost::asio::ssl::verify_context& ctx){
@@ -52,8 +59,10 @@ void TLS_Socket::handle_handshake(const boost::system::error_code& error){
 #ifdef DEBUG
 			std::cout << "TLS Handshake successful:" << std::endl;
 #endif
+			on_success();
 		} else {
 			std::cerr << "Handshake failed: " << error.message() << std::endl;
+			on_fail();
 		}
 	}
 

@@ -22,7 +22,6 @@ public:
 			std::cerr << "new connection, create new Connection handler to process this message" << std::endl;
 #endif
 			connections[con] = boost::shared_ptr<Connection<endpoint_type> >(new Connection<endpoint_type>(con, con->get_io_service()));
-			connections[con]->start();
 #ifdef DEBUG
 			std::cerr << "Added new Connection to map" << std::endl << " Connection address is: " << connections[con] << std::endl;
 #endif
@@ -56,8 +55,8 @@ public:
 			std::cerr << "Will delete Connection if it exists" << std::endl;
 #endif
 			if(connections[con]){
-				connections[con]->stop();
-				connections[con].reset();
+					connections[con]->stop();
+					connections[con].reset();
 			}
 			connections.erase(it);
 #ifdef DEBUG

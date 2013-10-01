@@ -24,31 +24,20 @@ public:
 	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
 
 	Connection(connection_ptr con, boost::asio::io_service &io_service) :
-		websocket_connection(con), readBuffer(1024), mqttMessage(""){
+		websocket_connection(con), readBuffer(1024), mqttMessage(""), connected(false){
 #ifdef DEBUG
 		std::cerr << "In Connection Constructor: creating new connection object" << std::endl;
 #endif
-		if(Connection::tlsVersion == "" || Connection::brokerCert == ""){
-			try {
-				socket = Socket::create(io_service, NULL);
-				std::cerr << "socket ready" << std::endl;
-				socket->do_connect();
-				std::cerr << "end of try" << std::endl;
-			} catch(boost::system::system_error &e){
-				std::cerr << "foo " << e.what() << std::endl;
-			}
-		} else{
-			try{
-				boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv1_client);
-				ctx.load_verify_file(Connection::brokerCert);
-				socket = Socket::create(io_service, &ctx);
-				std::cerr << "socket ready" << std::endl;
-				socket->do_connect();
-				std::cerr << "end of try" << std::endl;
-			} catch(boost::system::system_error &e){
-				std::cerr << "bar " << e.what() << std::endl;
-			}
+		if(Connection::tlsVersion == "" || Connection::brokerCert == "")
+			socket = Socket::create(io_service, NULL);
+		else{
+			boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv1_client);
+			ctx.load_verify_file(Connection::brokerCert);
+			socket = Socket::create(io_service, &ctx);
 		}
+		socket->on_fail = boost::bind(&Connection::fail, this);
+		socket->on_success = boost::bind(&Connection::first_start, this);
+		socket->do_connect();
 		std::cerr << "end of connection constructor" << std::endl;
 	}
 
@@ -60,6 +49,38 @@ public:
 #ifdef DEBUG
 		std::cerr << "End of Destructor of Connection" << std::endl;
 #endif
+	}
+
+
+	void first_start(){
+		std::cerr << "I'M STARTING" << std::endl;
+		#ifdef DEBUG
+				std::cerr << "queued stuff: " << queued_messages.size() << " bytes: " ;
+				unsigned int i = 0;
+				for(std::string::const_iterator it = queued_messages.begin(); it != queued_messages.end() && i <= queued_messages.size(); it++, i++)
+					std::cerr << std::setw(2) << std::setfill('0') << std::hex << (short)*it << " ";
+				std::cerr << std::dec << std::endl;
+		#endif
+		boost::asio::async_write(socket->getSocketForAsio(),
+				boost::asio::buffer(queued_messages.c_str(), queued_messages.size()),
+				boost::bind(
+						&Connection::async_tcp_write_handler,
+						this->shared_from_this(),
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred,
+						queued_messages
+				)
+		);
+		std::cerr << "I'LL WRITE THIS QUEUED MESSAGE: " << queued_messages << std::endl;
+		connected = true;
+		start_receive();
+	}
+
+	void fail(){
+		std::cerr << "I FAILED WHILE ESTABLISHING THE BROKER CONNECTION" << std::endl;
+		if(websocket_connection)
+			websocket_connection->close(websocketpp::close::status::NORMAL, "failed");
+		stop();
 	}
 
 	/*
@@ -84,7 +105,7 @@ public:
 #endif
 			websocket_connection->send(mqttMessage,	websocketpp::frame::opcode::BINARY);
 			// wait for new message
-			start();
+			start_receive();
 			} else if(mqtt_header[1] & 0x80){ // the length was not 0 and we need to read more remaining length bytes. receive_remaining_length will do it ...
 #ifdef DEBUG
 				std::cerr << "need to read extra bytes for remaining length field" << std::endl << std::endl;
@@ -218,7 +239,7 @@ public:
 			mqttMessage.append(std::string(readBuffer.data(), bytes_transferred));
 			websocket_connection->send(mqttMessage, websocketpp::frame::opcode::BINARY);
 			// wait for new message
-			start();
+			start_receive();
 		} else {
 #ifdef DEBUG
 			std::cerr << "error reading mqtt message (or operation was canceled)" << std::endl << bytes_transferred << "bytes arrived so far " << error << " websocket: " << websocket_connection << " connection " << this << std::endl << std::endl;
@@ -226,6 +247,19 @@ public:
 			if(error && error != boost::asio::error::operation_aborted)
 				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem in receice_message");
 		}
+	}
+
+	void async_tcp_write_handler(const boost::system::error_code& error, std::size_t bytes_transferred, std::string message){
+		if(error){
+#ifdef DEBUG
+			std::cerr << "error writing to the broker " << error << std::endl;
+#endif
+			if(websocket_connection)
+				websocket_connection->close(websocketpp::close::status::NORMAL, "problem while writing to the broker");
+		}
+#ifdef DEBUG
+		std::cerr << "successfully wrote " << message << std::endl;
+#endif
 	}
 
 	void send(const std::string &message) {
@@ -237,49 +271,49 @@ public:
 		std::cerr << std::dec << std::endl;
 		std::cerr << "plaintext: " << message << std::endl;
 #endif
-		try{
-			socket->getSocketForAsio().write_some(boost::asio::buffer(message.c_str(), message.size()));
-		}catch(boost::system::system_error &e){
-			std::cerr << "Write Error in TCP connection to broker: " << e.what() << std::endl;
-			if(websocket_connection)
-				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while sending");
+		if(connected){
+			std::cerr << "in send: ich bin verbunden und sende ..." << std::endl;
+			boost::asio::async_write(socket->getSocketForAsio(),
+					boost::asio::buffer(message.c_str(), message.size()),
+					boost::bind(
+							&Connection::async_tcp_write_handler,
+							this->shared_from_this(),
+							boost::asio::placeholders::error,
+							boost::asio::placeholders::bytes_transferred,
+							message
+					)
+			);
+		} else {
+			std::cerr << "in send: ich bin NICHT verbunden und queue ..." << std::endl;
+			queued_messages.append(message);
 		}
 	}
 
-	void start() {
+	void start_receive() {
 #ifdef DEBUG
-		std::cerr << "Begin of start() in Connection at: " << this << std::endl;
+		std::cerr << "Begin of start_receive() in Connection at: " << this << std::endl;
 #endif
-		if(socket){
-			boost::asio::async_read(
-				socket->getSocketForAsio(),
-				boost::asio::buffer(mqtt_header, 2),
-				boost::asio::transfer_at_least(2),
-				boost::bind(
-						&Connection::receive_header,
-						this->shared_from_this(),
-						boost::asio::placeholders::error,
-						boost::asio::placeholders::bytes_transferred
-				)
+		boost::asio::async_read(
+			socket->getSocketForAsio(),
+			boost::asio::buffer(mqtt_header, 2),
+			boost::asio::transfer_at_least(2),
+			boost::bind(
+					&Connection::receive_header,
+					this->shared_from_this(),
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+			)
 		);
 #ifdef DEBUG
 		std::cerr << "  started async TCP read" << std::endl;
 #endif
-		} else {
-#ifdef DEBUG
-		std::cerr << "  failed to start async read because there is no tcp socket to broker" << std::endl;
-#endif
-		if(websocket_connection)
-			websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem starting");
-		}
-
 	}
 
 	void stop(){
 #ifdef DEBUG
 		std::cerr << "Beginning of stop() in Connection at " << this << std::endl;
 #endif
-		if(socket){
+		if(socket->getSocketForAsio().is_open()){
 			socket->getSocketForAsio().cancel();
 			socket->getSocketForAsio().close();
 		}
@@ -295,6 +329,7 @@ public:
 
 private:
 	connection_ptr websocket_connection;
+	std::string queued_messages;
 	boost::shared_ptr<Socket> socket;
 	std::vector<char> readBuffer;
 	char mqtt_header[2];
@@ -302,6 +337,7 @@ private:
 	unsigned int remaining_length;
 	std::string mqttMessage;
 	unsigned int multiplier;
+	bool connected;
 };
 
 template <typename endpoint_type>
