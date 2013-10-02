@@ -26,7 +26,7 @@
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="/usr/include"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.574074810" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0  --std=c++0x" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.574074810" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0  " valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.563380547" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="DEBUG"/>
 								</option>

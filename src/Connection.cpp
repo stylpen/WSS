@@ -13,6 +13,9 @@
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
 
+extern int created;
+extern int deleted;
+
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware
 // Its send() method sends stuff (from the websocket) to the TCP endpoint
@@ -24,21 +27,11 @@ public:
 	typedef typename endpoint_type::handler::connection_ptr connection_ptr;
 
 	Connection(connection_ptr con, boost::asio::io_service &io_service) :
-		websocket_connection(con), readBuffer(1024), mqttMessage(""), connected(false){
+		websocket_connection(con), readBuffer(1024), mqttMessage(""), connected(false), closed(false){
 #ifdef DEBUG
-		std::cerr << "In Connection Constructor: creating new connection object" << std::endl;
+		std::cerr << "In Connection Constructor: creating socket" << std::endl;
 #endif
-		if(Connection::tlsVersion == "" || Connection::brokerCert == "")
-			socket = Socket::create(io_service, NULL);
-		else{
-			boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv1_client);
-			ctx.load_verify_file(Connection::brokerCert);
-			socket = Socket::create(io_service, &ctx);
-		}
-		socket->on_fail = boost::bind(&Connection::fail, this);
-		socket->on_success = boost::bind(&Connection::first_start, this);
-		socket->do_connect();
-		std::cerr << "end of connection constructor" << std::endl;
+		socket = Socket::create(io_service);
 	}
 
 	~Connection(){
@@ -47,14 +40,23 @@ public:
 #endif
 		websocket_connection->close(websocketpp::close::status::NORMAL, "closing");
 #ifdef DEBUG
-		std::cerr << "End of Destructor of Connection" << std::endl;
+		std::cerr << "End of Destructor of Connection. Address was " << this << " (" << websocket_connection << ")" << std::endl;
 #endif
 	}
 
+	void init(){
+#ifdef DEBUG
+		std::cerr << "Init Connection: connecting to broker" << std::endl;
+#endif
+		socket->on_fail = boost::bind(&Connection::fail, this->shared_from_this());
+		socket->on_success = boost::bind(&Connection::first_start, this->shared_from_this());
+		socket->on_end = boost::bind(&Connection::cleanup, this->shared_from_this());
+		socket->do_connect();
+	}
 
 	void first_start(){
-		std::cerr << "I'M STARTING" << std::endl;
 #ifdef DEBUG
+		std::cerr << "broker connection established" << std::endl;
 		std::cerr << "queued stuff: " << queued_messages.size() << " bytes: " ;
 		unsigned int i = 0;
 		for(std::string::const_iterator it = queued_messages.begin(); it != queued_messages.end() && i <= queued_messages.size(); it++, i++)
@@ -71,16 +73,37 @@ public:
 				queued_messages
 			)
 		);
-		std::cerr << "I'LL WRITE THIS QUEUED MESSAGE: " << queued_messages << std::endl;
+#ifdef DEBUG
+		std::cerr << "sending queued messages" << queued_messages << std::endl;
+#endif
 		connected = true;
 		start_receive();
 	}
 
 	void fail(){
-		std::cerr << "I FAILED WHILE ESTABLISHING THE BROKER CONNECTION" << std::endl;
-		if(websocket_connection)
-			websocket_connection->close(websocketpp::close::status::NORMAL, "failed");
-		stop();
+#ifdef DEBUG
+		std::cerr << "socket error in connection " << this << std::endl;
+#endif
+		try{
+			if(!closed)
+				websocket_connection->close(websocketpp::close::status::NORMAL, "failed");
+		}catch(std::exception &e){
+			std::cerr << e.what() << std::endl;
+		}
+	}
+
+	void cleanup(){
+#ifdef DEBUG
+		std::cerr << "in cleanup of connection" << std::endl;
+#endif
+		if(socket->getSocketForAsio().is_open()){
+			socket->getSocketForAsio().cancel();
+			socket->getSocketForAsio().close();
+		}
+		socket.reset();
+#ifdef DEBUG
+		std::cerr << "   stopped async TCP receive" << std::endl;
+#endif
 	}
 
 	/*
@@ -268,7 +291,9 @@ public:
 		std::cerr << "plaintext: " << message << std::endl;
 #endif
 		if(connected){
-			std::cerr << "in send: ich bin verbunden und sende ..." << std::endl;
+#ifdef DEBUG
+			std::cerr << "broker connection had been established. sending this message ..." << std::endl;
+#endif
 			socket->async_write(
 				boost::asio::buffer(message.c_str(), message.size()),
 				boost::bind(
@@ -280,7 +305,9 @@ public:
 				)
 			);
 		} else {
-			std::cerr << "in send: ich bin NICHT verbunden und queue ..." << std::endl;
+#ifdef DEBUG
+			std::cerr << "broker connection has not been established yet. queuing this message ..." << std::endl;
+#endif
 			queued_messages.append(message);
 		}
 	}
@@ -306,21 +333,11 @@ public:
 
 	void stop(){
 #ifdef DEBUG
-		std::cerr << "Beginning of stop() in Connection at " << this << std::endl;
+		std::cerr << "stop() in Connection at " << this << std::endl;
 #endif
-		if(socket->getSocketForAsio().is_open()){
-			socket->getSocketForAsio().cancel();
-			socket->getSocketForAsio().close();
-		}
-#ifdef DEBUG
-		std::cerr << "   stopped async TCP receive" << std::endl;
-#endif
+		socket->end();
+		closed = true;
 	}
-
-	static std::string hostname;
-	static std::string port;
-	static std::string brokerCert;
-	static std::string tlsVersion;
 
 private:
 	connection_ptr websocket_connection;
@@ -333,11 +350,7 @@ private:
 	std::string mqttMessage;
 	unsigned int multiplier;
 	bool connected;
+	bool closed;
 };
-
-template <typename endpoint_type>
-std::string Connection<endpoint_type>::brokerCert;
-template <typename endpoint_type>
-std::string Connection<endpoint_type>::tlsVersion;
 
 #endif /* CONNECTION_H_*/

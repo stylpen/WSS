@@ -25,6 +25,7 @@ public:
 			std::cerr << "new connection, create new Connection handler to process this message" << std::endl;
 #endif
 			connections[con] = boost::shared_ptr<Connection<endpoint_type> >(new Connection<endpoint_type>(con, con->get_io_service()));
+			connections[con]->init();
 #ifdef DEBUG
 			std::cerr << "Added new Connection to map" << std::endl << " Connection address is: " << connections[con] << std::endl;
 #endif
@@ -108,13 +109,12 @@ class TLSServerHandler : public ServerHandler<websocketpp::server_tls> {
 	typedef websocketpp::server_tls::handler::connection_ptr connection_ptr;
 	typedef websocketpp::server_tls::handler::message_ptr message_ptr;
 
+	// implement this if you want to use encrypted certificates
 	std::string get_password() const {
-		return "test";
+		return "password";
 	}
 
 	boost::shared_ptr<boost::asio::ssl::context> on_tls_init() {
-		std::cerr << "DOOOOOOOOOOOOOO" <<std::endl;
-		// create a tls context, init, and return.
 		boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
 		try {
 			context->set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
@@ -130,8 +130,7 @@ class TLSServerHandler : public ServerHandler<websocketpp::server_tls> {
 	}
 
 	void http(connection_ptr con) {
-		std::cerr << "HIEEEREIRIERIEREIR" <<std::endl;
-		con->set_body("<!DOCTYPE html><html><head><title>WebSocket++ TLS certificate test</title></head><body><h1>WebSocket++ TLS certificate test</h1><p>This is an HTTP(S) page served by a WebSocket++ server for the purposes of confirming that certificates are working since browsers normally silently ignore certificate issues.</p></body></html>");
+		con->set_body("<!DOCTYPE html><html><head><title>WSS TLS certificate test</title></head><body><h1>WSS TLS certificate test</h1><p>Secure WebSockets should work if you can see this.</p></body></html>");
 	}
 };
 
