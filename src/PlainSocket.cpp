@@ -1,4 +1,7 @@
 #include "PlainSocket.h"
+#include "Options.h"
+extern Options options;
+
 
 Plain_Socket::Plain_Socket(boost::asio::io_service& iIoService) :
 boost::asio::buffered_stream<boost::asio::ip::tcp::socket>(iIoService) {
@@ -7,7 +10,7 @@ boost::asio::buffered_stream<boost::asio::ip::tcp::socket>(iIoService) {
 void Plain_Socket::do_connect(){
 	try{
 		boost::asio::ip::tcp::resolver resolver(get_io_service());
-		boost::asio::ip::tcp::resolver::query query(Socket::hostname, Socket::port);
+		boost::asio::ip::tcp::resolver::query query(options.broker_hostname, options.broker_port);
 		boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 	#ifdef DEBUG
 		std::cerr << "will start async connect" << std::endl;

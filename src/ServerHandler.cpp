@@ -1,6 +1,9 @@
 #include <websocketpp/sockets/tls.hpp>
 #include <websocketpp/websocketpp.hpp>
 #include "Connection.cpp"
+#include "Options.h"
+
+extern Options options;
 
 #ifndef SERVER_HANDLER_H_
 #define SERVER_HANDLER_H_
@@ -93,20 +96,33 @@ public:
 #endif
 	}
 
+private:
+	typename std::map<connection_ptr, boost::shared_ptr<Connection<endpoint_type> > > connections;
+};
+
+class PlainServerHandler : public ServerHandler<websocketpp::server> {
+};
+
+class TLSServerHandler : public ServerHandler<websocketpp::server_tls> {
+
+	typedef websocketpp::server_tls::handler::connection_ptr connection_ptr;
+	typedef websocketpp::server_tls::handler::message_ptr message_ptr;
+
 	std::string get_password() const {
 		return "test";
 	}
 
 	boost::shared_ptr<boost::asio::ssl::context> on_tls_init() {
+		std::cerr << "DOOOOOOOOOOOOOO" <<std::endl;
 		// create a tls context, init, and return.
 		boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
 		try {
 			context->set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
-			context->set_password_callback(boost::bind(&me::get_password, this));
-			context->use_certificate_chain_file(ServerHandler::certChain);
-			context->use_private_key_file(ServerHandler::keyFile, boost::asio::ssl::context::pem);
-			if(ServerHandler::dhFile != "")
-				context->use_tmp_dh_file(ServerHandler::dhFile);
+			context->set_password_callback(boost::bind(&TLSServerHandler::get_password, this));
+			context->use_certificate_chain_file(options.ws_crt);
+			context->use_private_key_file(options.ws_key, boost::asio::ssl::context::pem);
+			if(options.ws_dh != "")
+				context->use_tmp_dh_file(options.ws_dh);
 		} catch (std::exception& e) {
 			std::cout << e.what() << std::endl;
 		}
@@ -114,23 +130,9 @@ public:
 	}
 
 	void http(connection_ptr con) {
+		std::cerr << "HIEEEREIRIERIEREIR" <<std::endl;
 		con->set_body("<!DOCTYPE html><html><head><title>WebSocket++ TLS certificate test</title></head><body><h1>WebSocket++ TLS certificate test</h1><p>This is an HTTP(S) page served by a WebSocket++ server for the purposes of confirming that certificates are working since browsers normally silently ignore certificate issues.</p></body></html>");
 	}
-
-	static std::string keyFile;
-	static std::string certChain;
-	static std::string dhFile;
-	static std::string tlsVersion;
-
-private:
-	typename std::map<connection_ptr, boost::shared_ptr<Connection<endpoint_type> > > connections;
 };
-
-template <typename endpoint_type> // plain or tls
-std::string ServerHandler<endpoint_type>::keyFile;
-template <typename endpoint_type> // plain or tls
-std::string ServerHandler<endpoint_type>::certChain;
-template <typename endpoint_type> // plain or tls
-std::string ServerHandler<endpoint_type>::dhFile;
 
 #endif /* SERVER_HANDLER_H_ */

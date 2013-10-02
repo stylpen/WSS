@@ -32,8 +32,11 @@
 #include <boost/asio/signal_set.hpp>
 #include "Connection.cpp"
 #include "ServerHandler.cpp"
+#include "Options.h"
 
 #define VERSION "TLS MQTT VERSION BUILD 0.6"
+
+Options options;
 
 int main(int argc, char* argv[]){
 	boost::program_options::options_description description("Available options");
@@ -63,19 +66,23 @@ int main(int argc, char* argv[]){
 			return 0;
 		}
 
-		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 18883;
-		Socket::hostname = variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
-		Socket::port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
+		options.broker_ca = variables_map.find("broker-certfile") != variables_map.end() ? variables_map["broker-certfile"].as<std::string>() : "";
+		options.broker_hostname =  variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
+		options.broker_port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
+		options.broker_tls_version = variables_map.find("tls-version") != variables_map.end() ? variables_map["tls-version"].as<std::string>() : "";
+		options.broker_tls = (variables_map.find("tls-version") != variables_map.end() && variables_map.find("broker-certfile") != variables_map.end())? true : false;
+		options.ws_crt = variables_map.find("ws-chainfile") != variables_map.end() ? variables_map["ws-chainfile"].as<std::string>() : "";
+		options.ws_dh = variables_map.find("ws-dh-file") != variables_map.end() ? variables_map["ws-dh-file"].as<std::string>() : "";
+		options.ws_key = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
+		options.ws_tls = (variables_map.find("ws-keyfile") != variables_map.end() && variables_map.find("ws-chainfile") != variables_map.end()) ? true : false;
 
-		if(variables_map.find("ws-keyfile") != variables_map.end() && variables_map.find("ws-chainfile") != variables_map.end()){
+		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 18883;
+
+		if(options.ws_tls){
 			Connection<websocketpp::server_tls>::brokerCert = variables_map.find("broker-certfile") != variables_map.end() ? variables_map["broker-certfile"].as<std::string>() : "";
 			Connection<websocketpp::server_tls>::tlsVersion = variables_map.find("tls-version") != variables_map.end() ? variables_map["tls-version"].as<std::string>() : "";
 
-			ServerHandler<websocketpp::server_tls>::keyFile = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
-			ServerHandler<websocketpp::server_tls>::certChain = variables_map.find("ws-chainfile") != variables_map.end() ? variables_map["ws-chainfile"].as<std::string>() : "";
-			ServerHandler<websocketpp::server_tls>::dhFile = variables_map.find("ws-dh-file") != variables_map.end() ? variables_map["ws-dh-file"].as<std::string>() : "";
-
-			websocketpp::server_tls::handler::ptr serverHandler(new ServerHandler<websocketpp::server_tls>());
+			websocketpp::server_tls::handler::ptr serverHandler(new TLSServerHandler());
 			websocketpp::server_tls websocketServer(serverHandler);
 
 			boost::asio::signal_set signals(websocketServer.get_io_service(), SIGINT, SIGTERM);
@@ -87,16 +94,21 @@ int main(int argc, char* argv[]){
 				websocketServer.elog().set_level(websocketpp::log::elevel::RERROR);
 				websocketServer.elog().set_level(websocketpp::log::elevel::FATAL);
 			}
+			std::cerr << "WS TLS" <<std::endl;
+
 			websocketServer.listen(boost::asio::ip::tcp::v4(), websocketPort, 1);
 		}else{
+
 			Connection<websocketpp::server>::brokerCert = variables_map.find("broker-certfile") != variables_map.end() ? variables_map["broker-certfile"].as<std::string>() : "";
 			Connection<websocketpp::server>::tlsVersion = variables_map.find("tls-version") != variables_map.end() ? variables_map["tls-version"].as<std::string>() : "";
 
-			websocketpp::server::handler::ptr serverHandler(new ServerHandler<websocketpp::server>());
+			websocketpp::server::handler::ptr serverHandler(new PlainServerHandler());
 			websocketpp::server websocketServer(serverHandler);
 
 			boost::asio::signal_set signals(websocketServer.get_io_service(), SIGINT, SIGTERM);
 			signals.async_wait(boost::bind(&websocketpp::server::stop, boost::ref(websocketServer), true, websocketpp::close::status::NORMAL, "websocket server quit"));
+
+			std::cerr << "WS NON TLS" <<std::endl;
 
 			websocketServer.alog().unset_level(websocketpp::log::alevel::ALL);
 			websocketServer.elog().unset_level(websocketpp::log::elevel::ALL);

@@ -1,5 +1,6 @@
 #include "TLSSocket.h"
-#include <iostream>
+#include "Options.h"
+extern Options options;
 
 TLS_Socket::TLS_Socket(boost::asio::io_service& iIoService, boost::asio::ssl::context& iSslContext) :
 		boost::asio::ssl::stream<boost::asio::ip::tcp::socket>(iIoService, iSslContext) {
@@ -11,7 +12,7 @@ void TLS_Socket::do_connect(){
 		set_verify_mode(boost::asio::ssl::verify_none);
 		set_verify_callback(boost::bind(&TLS_Socket::verify_certificate, shared_from_this(), _1, _2));
 		boost::asio::ip::tcp::resolver resolver(get_io_service());
-		boost::asio::ip::tcp::resolver::query query(Socket::hostname, Socket::port);
+		boost::asio::ip::tcp::resolver::query query(options.broker_hostname, options.broker_port);
 		boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 #ifdef DEBUG
 		std::cerr << "will start async connect" << std::endl;

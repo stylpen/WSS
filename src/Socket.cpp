@@ -11,6 +11,3 @@ boost::shared_ptr<Socket> Socket::create(boost::asio::io_service& iIoService, bo
  Socket::~Socket() {
 	std::cout << "destructor of socket" << std::endl;
  };
-
-std::string Socket::hostname;
-std::string Socket::port;
