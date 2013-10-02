@@ -12,12 +12,5 @@ boost::shared_ptr<Socket> Socket::create(boost::asio::io_service& iIoService, bo
 	std::cout << "destructor of socket" << std::endl;
  };
 
-size_t Socket::_read(void *ipData, size_t iLength) {
-	return boost::asio::read(getSocketForAsio(), boost::asio::buffer(ipData, iLength));
-}
-size_t Socket::_write(const void *ipData, size_t iLength) {
-	return boost::asio::write(getSocketForAsio(), boost::asio::buffer(ipData, iLength));
-}
-
 std::string Socket::hostname;
 std::string Socket::port;
