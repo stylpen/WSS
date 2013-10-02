@@ -6,6 +6,16 @@ TLS_Socket::TLS_Socket(boost::asio::io_service& iIoService, boost::asio::ssl::co
 		boost::asio::ssl::stream<boost::asio::ip::tcp::socket>(iIoService, iSslContext) {
 }
 
+void TLS_Socket::async_read(boost::asio::mutable_buffers_1 buffer, std::size_t num, boost::function<void(const boost::system::error_code&, size_t)> callback){
+	boost::asio::async_read(*(shared_from_this()), buffer, boost::asio::transfer_at_least(num), callback);
+	std::cerr << "DOING MY ASYNC READ" << std::endl;
+}
+
+void TLS_Socket::async_write(boost::asio::const_buffers_1 buffer, boost::function<void(const boost::system::error_code&, size_t)> callback){
+	boost::asio::async_write(*(shared_from_this()), buffer, callback);
+	std::cerr << "DOING MY ASYNC WRITE" << std::endl;
+}
+
 void TLS_Socket::do_connect(){
 	std::cerr << "in do connect of tls socket" << std::endl;
 	try{

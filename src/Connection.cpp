@@ -54,22 +54,22 @@ public:
 
 	void first_start(){
 		std::cerr << "I'M STARTING" << std::endl;
-		#ifdef DEBUG
-				std::cerr << "queued stuff: " << queued_messages.size() << " bytes: " ;
-				unsigned int i = 0;
-				for(std::string::const_iterator it = queued_messages.begin(); it != queued_messages.end() && i <= queued_messages.size(); it++, i++)
-					std::cerr << std::setw(2) << std::setfill('0') << std::hex << (short)*it << " ";
-				std::cerr << std::dec << std::endl;
-		#endif
-		boost::asio::async_write(socket->getSocketForAsio(),
-				boost::asio::buffer(queued_messages.c_str(), queued_messages.size()),
-				boost::bind(
-						&Connection::async_tcp_write_handler,
-						this->shared_from_this(),
-						boost::asio::placeholders::error,
-						boost::asio::placeholders::bytes_transferred,
-						queued_messages
-				)
+#ifdef DEBUG
+		std::cerr << "queued stuff: " << queued_messages.size() << " bytes: " ;
+		unsigned int i = 0;
+		for(std::string::const_iterator it = queued_messages.begin(); it != queued_messages.end() && i <= queued_messages.size(); it++, i++)
+			std::cerr << std::setw(2) << std::setfill('0') << std::hex << (short)*it << " ";
+		std::cerr << std::dec << std::endl;
+#endif
+		socket->async_write(
+			boost::asio::buffer(queued_messages.c_str(), queued_messages.size()),
+			boost::bind(
+				&Connection::async_tcp_write_handler,
+				this->shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred,
+				queued_messages
+			)
 		);
 		std::cerr << "I'LL WRITE THIS QUEUED MESSAGE: " << queued_messages << std::endl;
 		connected = true;
@@ -115,16 +115,15 @@ public:
 #ifdef DEBUG
 				std::cerr << "length initially is: " << remaining_length << std::endl;
 #endif
-				boost::asio::async_read(
-						socket->getSocketForAsio(),
-						boost::asio::buffer(&next_byte, 1),
-						boost::asio::transfer_at_least(1),
-						boost::bind(
-								&Connection::receive_remaining_length,
-								this->shared_from_this(),
-								boost::asio::placeholders::error,
-								boost::asio::placeholders::bytes_transferred
-						)
+				socket->async_read(
+					boost::asio::buffer(&next_byte, 1),
+					1,
+					boost::bind(
+						&Connection::receive_remaining_length,
+						this->shared_from_this(),
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred
+					)
 				);
 			} else{ // receive_mqtt_message will do the rest
 				remaining_length = mqtt_header[1];
@@ -132,16 +131,15 @@ public:
 				std::cerr << "the remaining message length is: " << remaining_length << std::endl << std::endl;
 #endif
 				readBuffer.resize(remaining_length);
-				boost::asio::async_read(
-						socket->getSocketForAsio(),
-						boost::asio::buffer(readBuffer, remaining_length),
-						boost::asio::transfer_at_least(remaining_length),
-						boost::bind(
-								&Connection::receive_mqtt_message,
-								this->shared_from_this(),
-								boost::asio::placeholders::error,
-								boost::asio::placeholders::bytes_transferred
-						)
+				socket->async_read(
+					boost::asio::buffer(readBuffer, remaining_length),
+					remaining_length,
+					boost::bind(
+						&Connection::receive_mqtt_message,
+						this->shared_from_this(),
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::bytes_transferred
+					)
 				);
 			}
 		} else {
@@ -185,32 +183,30 @@ public:
 				std::cerr << "remaining length is now: " << remaining_length << std::endl;
 #endif
 				if(next_byte & 0x80){ // there is still a continuation bit and we need to go on by calling this method again.
-					boost::asio::async_read(
-							socket->getSocketForAsio(),
-							boost::asio::buffer(&next_byte, 1),
-							boost::asio::transfer_at_least(1),
-							boost::bind(
-									&Connection::receive_remaining_length,
-									this->shared_from_this(),
-									boost::asio::placeholders::error,
-									boost::asio::placeholders::bytes_transferred
-							)
+					socket->async_read(
+						boost::asio::buffer(&next_byte, 1),
+						1,
+						boost::bind(
+							&Connection::receive_remaining_length,
+							this->shared_from_this(),
+							boost::asio::placeholders::error,
+							boost::asio::placeholders::bytes_transferred
+						)
 					);
 				} else { // this was the last one and we now know the length of the remaining message. receive_mqtt_message will now do the rest
 #ifdef DEBUG
 					std::cerr << "length finally is: "  << remaining_length << std::endl;
 #endif
 					readBuffer.resize(remaining_length);
-					boost::asio::async_read(
-							socket->getSocketForAsio(),
-							boost::asio::buffer(readBuffer, remaining_length),
-							boost::asio::transfer_at_least(remaining_length),
-							boost::bind(
-									&Connection::receive_mqtt_message,
-									this->shared_from_this(),
-									boost::asio::placeholders::error,
-									boost::asio::placeholders::bytes_transferred
-							)
+					socket->async_read(
+					boost::asio::buffer(readBuffer, remaining_length),
+						remaining_length,
+						boost::bind(
+							&Connection::receive_mqtt_message,
+							this->shared_from_this(),
+							boost::asio::placeholders::error,
+							boost::asio::placeholders::bytes_transferred
+						)
 					);
 				}
 			} else {
@@ -273,15 +269,15 @@ public:
 #endif
 		if(connected){
 			std::cerr << "in send: ich bin verbunden und sende ..." << std::endl;
-			boost::asio::async_write(socket->getSocketForAsio(),
-					boost::asio::buffer(message.c_str(), message.size()),
-					boost::bind(
-							&Connection::async_tcp_write_handler,
-							this->shared_from_this(),
-							boost::asio::placeholders::error,
-							boost::asio::placeholders::bytes_transferred,
-							message
-					)
+			socket->async_write(
+				boost::asio::buffer(message.c_str(), message.size()),
+				boost::bind(
+					&Connection::async_tcp_write_handler,
+					this->shared_from_this(),
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred,
+					message
+				)
 			);
 		} else {
 			std::cerr << "in send: ich bin NICHT verbunden und queue ..." << std::endl;
@@ -293,15 +289,14 @@ public:
 #ifdef DEBUG
 		std::cerr << "Begin of start_receive() in Connection at: " << this << std::endl;
 #endif
-		boost::asio::async_read(
-			socket->getSocketForAsio(),
+		socket->async_read(
 			boost::asio::buffer(mqtt_header, 2),
-			boost::asio::transfer_at_least(2),
+			2,
 			boost::bind(
-					&Connection::receive_header,
-					this->shared_from_this(),
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred
+				&Connection::receive_header,
+				this->shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred
 			)
 		);
 #ifdef DEBUG

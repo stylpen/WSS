@@ -6,10 +6,12 @@
 #ifndef TLSSOCKET_H_
 #define TLSSOCKET_H_
 
-class TLS_Socket: public boost::enable_shared_from_this<TLS_Socket>, public Socket, private boost::asio::ssl::stream<boost::asio::ip::tcp::socket> {
+class TLS_Socket: public boost::enable_shared_from_this<TLS_Socket>, public Socket, public boost::asio::ssl::stream<boost::asio::ip::tcp::socket> {
 public:
 	TLS_Socket(boost::asio::io_service&, boost::asio::ssl::context&);
 	void do_connect();
+	void async_read(boost::asio::mutable_buffers_1, std::size_t,  boost::function<void(const boost::system::error_code&, size_t)>);
+	void async_write(boost::asio::const_buffers_1, boost::function<void(const boost::system::error_code&, size_t)>);
 
 private:
     boost::asio::ip::tcp::socket &getSocketForAsio();

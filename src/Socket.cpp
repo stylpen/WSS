@@ -8,6 +8,7 @@ boost::shared_ptr<Socket> Socket::create(boost::asio::io_service& iIoService, bo
 	}
    return boost::shared_ptr<Socket>(new TLS_Socket(iIoService, *ipSslContext));
 }
+
  Socket::~Socket() {
 	std::cout << "destructor of socket" << std::endl;
  };

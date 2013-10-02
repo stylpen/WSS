@@ -7,6 +7,16 @@ Plain_Socket::Plain_Socket(boost::asio::io_service& iIoService) :
 boost::asio::buffered_stream<boost::asio::ip::tcp::socket>(iIoService) {
 }
 
+void Plain_Socket::async_read(boost::asio::mutable_buffers_1 buffer, std::size_t num, boost::function<void(const boost::system::error_code&, size_t)> callback){
+	boost::asio::async_read(next_layer(), buffer, boost::asio::transfer_at_least(num), callback);
+	std::cerr << "DOING MY ASYNC READ" << std::endl;
+}
+
+void Plain_Socket::async_write(boost::asio::const_buffers_1 buffer, boost::function<void(const boost::system::error_code&, size_t)> callback){
+	boost::asio::async_write(next_layer(), buffer, callback);
+	std::cerr << "DOING MY ASYNC WRITE" << std::endl;
+}
+
 void Plain_Socket::do_connect(){
 	try{
 		boost::asio::ip::tcp::resolver resolver(get_io_service());
