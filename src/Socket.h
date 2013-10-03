@@ -4,6 +4,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/thread.hpp>
+#include <boost/version.hpp>
 
 #ifndef SOCKET_H_
 #define SOCKET_H_

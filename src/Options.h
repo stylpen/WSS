@@ -17,6 +17,7 @@ struct Options{
 	std::string ws_crt;
 	std::string ws_key;
 	std::string ws_dh;
+	std::string ws_tls_version;
 	bool ws_tls;
 };
 

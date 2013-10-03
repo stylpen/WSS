@@ -115,7 +115,27 @@ class TLSServerHandler : public ServerHandler<websocketpp::server_tls> {
 	}
 
 	boost::shared_ptr<boost::asio::ssl::context> on_tls_init() {
-		boost::shared_ptr<boost::asio::ssl::context> context(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
+		boost::shared_ptr<boost::asio::ssl::context> context;
+#if BOOST_VERSION < 105400
+		context = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
+#ifdef DEBUG
+		if(options.ws_tls_version != "TLSV1")
+			std::cerr << "The version of boost WSS is compiled with allows only TLSv1. Using that version." << std::endl;
+#endif
+#else
+		if(options.ws_tls_version == "TLSV1")
+			context = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
+		else if(options.ws_tls_version == "TLSV11")
+			context = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv11_server));
+		else if(options.ws_tls_version == "TLSV12")
+			context = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv12_server));
+		else{
+#ifdef DEBUG
+			std::cerr << "Unknown TLS version \"" << options.ws_tls_version << "\". Taking TLSv1 instead." << std::endl;
+#endif
+			ctx = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
+		}
+#endif
 		try {
 			context->set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
 			context->set_password_callback(boost::bind(&TLSServerHandler::get_password, this));

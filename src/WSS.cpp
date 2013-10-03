@@ -30,6 +30,7 @@
 #include <websocketpp/websocketpp.hpp>
 #include <boost/program_options.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/algorithm/string.hpp>
 #include "Connection.cpp"
 #include "ServerHandler.cpp"
 #include "Options.h"
@@ -48,8 +49,9 @@ int main(int argc, char* argv[]){
 		("ws-keyfile", boost::program_options::value<std::string>(), "server key file for websocket side")
 		("ws-chainfile", boost::program_options::value<std::string>(), "keychain for the websocket server key")
 		("ws-dh-file", boost::program_options::value<std::string>(), "diffie- hellman parameter for websocket tls connection")
+		("ws-tls-version", boost::program_options::value<std::string>(), "TLS version for websockets.\nDefault is TLSv1")
 		("broker-certfile", boost::program_options::value<std::string>(), "certificate to use connection to MQTT broker")
-		("tls-version", boost::program_options::value<std::string>(), "TLS version for connection to MQTT broker")
+		("broker-tls-version", boost::program_options::value<std::string>(), "TLS version for connection to MQTT broker.\nDefault is TLSv1")
 		("version", "print version number and exit")
 		("verbose", "print websocket error messages");
 
@@ -69,12 +71,16 @@ int main(int argc, char* argv[]){
 		options.broker_ca = variables_map.find("broker-certfile") != variables_map.end() ? variables_map["broker-certfile"].as<std::string>() : "";
 		options.broker_hostname =  variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
 		options.broker_port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
-		options.broker_tls_version = variables_map.find("tls-version") != variables_map.end() ? variables_map["tls-version"].as<std::string>() : "";
-		options.broker_tls = (variables_map.find("tls-version") != variables_map.end() && variables_map.find("broker-certfile") != variables_map.end())? true : false;
+		options.broker_tls_version = variables_map.find("broker-tls-version") != variables_map.end() ? variables_map["broker-tls-version"].as<std::string>() : "TLSv1";
+		options.broker_tls = (variables_map.find("broker-certfile") != variables_map.end())? true : false;
 		options.ws_crt = variables_map.find("ws-chainfile") != variables_map.end() ? variables_map["ws-chainfile"].as<std::string>() : "";
 		options.ws_dh = variables_map.find("ws-dh-file") != variables_map.end() ? variables_map["ws-dh-file"].as<std::string>() : "";
 		options.ws_key = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
+		options.ws_tls_version = variables_map.find("ws-tls-version") != variables_map.end() ? variables_map["ws-tls-version"].as<std::string>() : "TLSv1";
 		options.ws_tls = (variables_map.find("ws-keyfile") != variables_map.end() && variables_map.find("ws-chainfile") != variables_map.end()) ? true : false;
+
+		boost::to_upper(options.broker_tls_version);
+		boost::to_upper(options.ws_tls_version);
 
 		unsigned short websocketPort = variables_map.find("websocketPort") != variables_map.end() ? variables_map["websocketPort"].as<unsigned short>() : 18883;
 
