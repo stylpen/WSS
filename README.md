@@ -28,6 +28,8 @@ For the MQTT broker side provide --broker-cert <MQTT broker CA>. WARNING: THIS I
 To use TLS versions other than TLSv1 specify --ws-tls-version <version> and/or --broker-tls-version <version>. This only works if you compiled with boost version 1.54 or later. Otherwise TLSv1 is used regardless of the specified version.
 Use 'TLSv11' for version 1.1 or 'TLSv12' for version 1.2
 
+To allow web browsers to trust the certificate used by WSS (when using TLS websockets) an HTTPS request can be send to the websocket server. The user can then accept the certificate and thereby allow the browser to connect to WSS in the future.
+
 sample invocation:
 
 ```$ ./WSS_release --brokerHost localhost --ws-keyfile ssl/server.key --ws-chainfile ssl/server.pem  --ws-dh-file ssl/dh.pem --broker-cert ssl/ca.pem```
