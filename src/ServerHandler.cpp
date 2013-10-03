@@ -133,7 +133,7 @@ class TLSServerHandler : public ServerHandler<websocketpp::server_tls> {
 #ifdef DEBUG
 			std::cerr << "Unknown TLS version \"" << options.ws_tls_version << "\". Taking TLSv1 instead." << std::endl;
 #endif
-			ctx = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
+			context = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_server));
 		}
 #endif
 		try {
