@@ -14,9 +14,6 @@
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
 
-extern int created;
-extern int deleted;
-
 // The Connection created on construction a new TCP connection.
 // It forwards incoming TCP traffic to the websocket. That happens MQTT aware
 // Its send() method sends stuff (from the websocket) to the TCP endpoint
