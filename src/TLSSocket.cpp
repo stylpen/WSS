@@ -1,5 +1,6 @@
 #include "TLSSocket.h"
 #include "Options.h"
+#include <boost/asio/ssl.hpp>
 extern Options options;
 
 TLS_Socket::TLS_Socket(boost::asio::io_service& iIoService, boost::asio::ssl::context& iSslContext) :
@@ -35,7 +36,10 @@ void TLS_Socket::handle_shutdown(const boost::system::error_code& error){
 
 void TLS_Socket::do_connect(){
 	try{
-		set_verify_mode(boost::asio::ssl::verify_none);
+		if(options.broker_ca == "")
+			set_verify_mode(boost::asio::ssl::verify_none);
+		else
+			set_verify_mode(boost::asio::ssl::verify_peer);
 		set_verify_callback(boost::bind(&TLS_Socket::verify_certificate, this, _1, _2));
 		boost::asio::ip::tcp::resolver resolver(get_io_service());
 		boost::asio::ip::tcp::resolver::query query(options.broker_hostname, options.broker_port);
@@ -55,11 +59,18 @@ void TLS_Socket::do_connect(){
 }
 
 bool TLS_Socket::verify_certificate(bool preverified, boost::asio::ssl::verify_context& ctx){
-	// The verify callback can be used to check whether the certificate that is
-	// being presented is valid for the peer. Note that the callback is called once
-	// for each certificate in the certificate chain, starting from the root
-	// certificate authority.
-	// well, we could actually do something here some time ...
+#ifdef DEBUG
+	if(preverified == false)
+		std::cerr << "preverification error: " << X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx.native_handle())) << std::endl;
+#endif
+	if((X509_STORE_CTX_get_error(ctx.native_handle()) == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+		|| X509_STORE_CTX_get_error(ctx.native_handle()) == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+	   ) && options.broker_allow_self_signed_certificates){
+#ifdef DEBUG
+		std::cerr << "accepting self signed certificate" << std::endl;
+#endif
+		preverified = true;
+	}
 	return preverified;
 }
 

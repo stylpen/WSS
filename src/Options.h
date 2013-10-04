@@ -13,6 +13,7 @@ struct Options{
 	std::string broker_port;
 	std::string broker_ca;
 	std::string broker_tls_version;
+	bool broker_allow_self_signed_certificates;
 	bool broker_tls;
 	std::string ws_crt;
 	std::string ws_key;

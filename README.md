@@ -19,11 +19,12 @@ It assumes the boost and websocket++ header files and libraries are located in /
 
 ```$ make all``` will compile debug and release versions. For more details see makefile
 
-By default TLSv1 is used if all required certificates/keys are provided.
+TLSv1 is used on the websocket side if both the required certificate and key are provided. Otherwise no encryption is used on the websocket side.
+If you want to connect to a broker using TLS use the --broker-tls-enabled option. Otherwise an unencrypted connection to the MQTT broker is established.
 
-These are for the Websocket side: --ws-keyfile <websocket server key file> --ws-chainfile <websocket server certificate file> and optionally --ws-dh-file <diffie-hellman parameter file>
+To configure TLS on the websocket side there are the following parameter: --ws-keyfile <websocket server key file> --ws-chainfile <websocket server certificate file> and optionally --ws-dh-file <diffie-hellman parameter file>
 
-For the MQTT broker side provide --broker-cert <MQTT broker CA>. WARNING: THIS IS CURRENTLY NOT USED TO CHECK AUTHENTICITY OF THE REMOTE PEER. Any file will have the same effect: TLS is used for the connection but NO remote peer is verified using the CA.
+For the MQTT broker side you can provide --broker-ca <MQTT broker CA>. When TLS is enabled it uses this CA to verify authenticity the broker. By default self- signed broker certificates are accepted. Use --broker-do-not-accept-self-signed-certificates if you do not want to trust them. If no broker ca is given but TLS is enabled the remote peer will not be verified and --broker-do-not-accept-self-signed-certificates has no effect.
 
 To use TLS versions other than TLSv1 specify --ws-tls-version <version> and/or --broker-tls-version <version>. This only works if you compiled with boost version 1.54 or later. Otherwise TLSv1 is used regardless of the specified version.
 Use 'TLSv11' for version 1.1 or 'TLSv12' for version 1.2
@@ -32,4 +33,4 @@ To allow web browsers to trust the certificate used by WSS (when using TLS webso
 
 sample invocation:
 
-```$ ./WSS_release --brokerHost localhost --ws-keyfile ssl/server.key --ws-chainfile ssl/server.pem  --ws-dh-file ssl/dh.pem --broker-cert ssl/ca.pem```
+```$ ./WSS_release --brokerHost localhost --ws-keyfile ssl/server.key --ws-chainfile ssl/server.pem  --ws-dh-file ssl/dh.pem --broker-ca ssl/ca.pem``--broker-tls-enabled`

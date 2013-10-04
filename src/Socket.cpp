@@ -33,7 +33,8 @@ boost::shared_ptr<Socket> Socket::create(boost::asio::io_service& iIoService) {
 			ctx = boost::shared_ptr<boost::asio::ssl::context>(new boost::asio::ssl::context(boost::asio::ssl::context::tlsv1_client));
 		}
 #endif
-		ctx->load_verify_file(options.broker_ca);
+		if(options.broker_ca != "")
+			ctx->load_verify_file(options.broker_ca);
 		return boost::shared_ptr<Socket>(new TLS_Socket(iIoService, *ctx));
 	} else{
 #ifdef DEBUG

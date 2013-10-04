@@ -50,8 +50,10 @@ int main(int argc, char* argv[]){
 		("ws-chainfile", boost::program_options::value<std::string>(), "keychain for the websocket server key")
 		("ws-dh-file", boost::program_options::value<std::string>(), "diffie- hellman parameter for websocket tls connection")
 		("ws-tls-version", boost::program_options::value<std::string>(), "TLS version for websockets.\nDefault is TLSv1")
-		("broker-certfile", boost::program_options::value<std::string>(), "certificate to use connection to MQTT broker")
+		("broker-ca", boost::program_options::value<std::string>(), "certificate used verify MQTT broker's authenticity. ")
 		("broker-tls-version", boost::program_options::value<std::string>(), "TLS version for connection to MQTT broker.\nDefault is TLSv1")
+		("broker-tls-enabled", "use TLS when connecting to the MQTT broker.\nIf --broker-ca <ca> is given then it will be used to verify the broker - otherwise the authenticity of the broker is not checked.")
+		("broker-do-not-accept-self-signed-certificates", "If set then self signed broker certificates are treated as invalid. Only relevant if --broker-ca <ca> is given ")
 		("version", "print version number and exit")
 		("verbose", "print websocket error messages");
 
@@ -68,11 +70,12 @@ int main(int argc, char* argv[]){
 			return 0;
 		}
 
-		options.broker_ca = variables_map.find("broker-certfile") != variables_map.end() ? variables_map["broker-certfile"].as<std::string>() : "";
+		options.broker_ca = variables_map.find("broker-ca") != variables_map.end() ? variables_map["broker-ca"].as<std::string>() : "";
 		options.broker_hostname =  variables_map.find("brokerHost") != variables_map.end() ? variables_map["brokerHost"].as<std::string>() : "localhost";
 		options.broker_port = variables_map.find("brokerPort") != variables_map.end() ? variables_map["brokerPort"].as<std::string>() : "1883";
 		options.broker_tls_version = variables_map.find("broker-tls-version") != variables_map.end() ? variables_map["broker-tls-version"].as<std::string>() : "TLSv1";
-		options.broker_tls = (variables_map.find("broker-certfile") != variables_map.end())? true : false;
+		options.broker_tls = (variables_map.find("broker-tls-enabled") != variables_map.end())? true : false;
+		options.broker_allow_self_signed_certificates = (variables_map.find("broker-do-not-accept-self-signed-certificates") != variables_map.end())? false : true;
 		options.ws_crt = variables_map.find("ws-chainfile") != variables_map.end() ? variables_map["ws-chainfile"].as<std::string>() : "";
 		options.ws_dh = variables_map.find("ws-dh-file") != variables_map.end() ? variables_map["ws-dh-file"].as<std::string>() : "";
 		options.ws_key = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
