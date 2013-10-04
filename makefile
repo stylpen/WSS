@@ -1,10 +1,13 @@
 all: WSS_debug WSS_release
 
-WSS_debug:  build_debug/Socket.o build_debug/PlainSocket.o build_debug/TLSSocket.o build_debug/Connection.o build_debug/ServerHandler.o build_debug/WSS.o
-	g++ -L/usr/local/lib -o WSS_debug  build_debug/Connection.o build_debug/PlainSocket.o build_debug/ServerHandler.o build_debug/Socket.o build_debug/TLSSocket.o build_debug/WSS.o  /usr/lib/libboost_program_options.a /usr/local/lib/libwebsocketpp.a /usr/lib/libboost_system.a /usr/lib/libboost_thread.a /usr/lib/libboost_date_time.a /usr/lib/libboost_regex.a -lpthread -lcrypto -lssl
+WSS_debug:  build_debug/SharedBuffer.o build_debug/Socket.o build_debug/PlainSocket.o build_debug/TLSSocket.o build_debug/Connection.o build_debug/ServerHandler.o build_debug/WSS.o
+	g++ -L/usr/local/lib -o WSS_debug  build_debug/SharedBuffer.o build_debug/Connection.o build_debug/PlainSocket.o build_debug/ServerHandler.o build_debug/Socket.o build_debug/TLSSocket.o build_debug/WSS.o  /usr/lib/libboost_program_options.a /usr/local/lib/libwebsocketpp.a /usr/lib/libboost_system.a /usr/lib/libboost_thread.a /usr/lib/libboost_date_time.a /usr/lib/libboost_regex.a -lpthread -lcrypto -lssl
 	
-WSS_release:  build_release/Socket.o build_release/PlainSocket.o build_release/TLSSocket.o build_release/Connection.o build_release/ServerHandler.o build_release/WSS.o
-	g++ -L/usr/local/lib -oWSS_release  build_release/Connection.o build_release/PlainSocket.o build_release/ServerHandler.o build_release/Socket.o build_release/TLSSocket.o build_release/WSS.o  /usr/lib/libboost_program_options.a /usr/local/lib/libwebsocketpp.a /usr/lib/libboost_system.a /usr/lib/libboost_thread.a /usr/lib/libboost_date_time.a /usr/lib/libboost_regex.a -lpthread -lcrypto -lssl
+WSS_release:  build_release/SharedBuffer.o build_release/Socket.o build_release/PlainSocket.o build_release/TLSSocket.o build_release/Connection.o build_release/ServerHandler.o build_release/WSS.o
+	g++ -L/usr/local/lib -oWSS_release build_release/SharedBuffer.o build_release/Connection.o build_release/PlainSocket.o build_release/ServerHandler.o build_release/Socket.o build_release/TLSSocket.o build_release/WSS.o  /usr/lib/libboost_program_options.a /usr/local/lib/libwebsocketpp.a /usr/lib/libboost_system.a /usr/lib/libboost_thread.a /usr/lib/libboost_date_time.a /usr/lib/libboost_regex.a -lpthread -lcrypto -lssl
+
+build_debug/SharedBuffer.o: src/SharedBuffer.h src/SharedBuffer.cpp
+	g++ -c -obuild_debug/SharedBuffer.o -Isrc src/SharedBuffer.cpp  -Wall -O3
 	
 build_debug/Socket.o: src/Socket.h src/Socket.cpp
 	g++ -c -obuild_debug/Socket.o -Isrc src/Socket.cpp -ggdb -DDEBUG
@@ -24,6 +27,9 @@ build_debug/ServerHandler.o: src/ServerHandler.cpp
 build_debug/WSS.o: src/WSS.cpp
 	g++ -c -obuild_debug/WSS.o -Isrc src/WSS.cpp -ggdb -DDEBUG
 	
+build_release/SharedBuffer.o: src/SharedBuffer.h src/SharedBuffer.cpp
+	g++ -c -obuild_release/SharedBuffer.o -Isrc src/SharedBuffer.cpp  -Wall -O3
+
 build_release/Socket.o: src/Socket.h src/Socket.cpp
 	g++ -c -obuild_release/Socket.o -Isrc src/Socket.cpp  -Wall -O3
 	

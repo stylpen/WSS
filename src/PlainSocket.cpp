@@ -11,7 +11,7 @@ void Plain_Socket::async_read(boost::asio::mutable_buffers_1 buffer, std::size_t
 	boost::asio::async_read(next_layer(), buffer, boost::asio::transfer_at_least(num), callback);
 }
 
-void Plain_Socket::async_write(boost::asio::const_buffers_1 buffer, boost::function<void(const boost::system::error_code&, size_t)> callback){
+void Plain_Socket::async_write(SharedBuffer buffer, boost::function<void(const boost::system::error_code&, size_t)> callback){
 	boost::asio::async_write(next_layer(), buffer, callback);
 }
 

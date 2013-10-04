@@ -5,6 +5,7 @@
 #include <boost/function.hpp>
 #include <boost/thread.hpp>
 #include <boost/version.hpp>
+#include "SharedBuffer.h"
 
 #ifndef SOCKET_H_
 #define SOCKET_H_
@@ -20,7 +21,7 @@ public:
 	boost::function<void()> on_fail;
 	boost::function<void()> on_end;
 	virtual void async_read(boost::asio::mutable_buffers_1, std::size_t, boost::function<void(const boost::system::error_code&, size_t)>) = 0;
-	virtual void async_write(boost::asio::const_buffers_1, boost::function<void(const boost::system::error_code&, size_t)>) = 0;
+	virtual void async_write(SharedBuffer, boost::function<void(const boost::system::error_code&, size_t)>) = 0;
 };
 
 #endif /* SOCKET_H_ */

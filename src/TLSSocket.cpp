@@ -11,7 +11,7 @@ void TLS_Socket::async_read(boost::asio::mutable_buffers_1 buffer, std::size_t n
 	boost::asio::async_read(*(shared_from_this()), buffer, boost::asio::transfer_at_least(num), callback);
 }
 
-void TLS_Socket::async_write(boost::asio::const_buffers_1 buffer, boost::function<void(const boost::system::error_code&, size_t)> callback){
+void TLS_Socket::async_write(SharedBuffer buffer, boost::function<void(const boost::system::error_code&, size_t)> callback){
 	boost::asio::async_write(*(shared_from_this()), buffer, callback);
 }
 

@@ -9,6 +9,7 @@
 #include "Socket.h"
 #include "PlainSocket.h"
 #include "TLSSocket.h"
+#include "SharedBuffer.h"
 
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
@@ -64,13 +65,12 @@ public:
 		std::cerr << std::dec << std::endl;
 #endif
 		socket->async_write(
-			boost::asio::buffer(queued_messages.c_str(), queued_messages.size()),
+			SharedBuffer(queued_messages),
 			boost::bind(
 				&Connection::async_tcp_write_handler,
 				this->shared_from_this(),
 				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred,
-				queued_messages
+				boost::asio::placeholders::bytes_transferred
 			)
 		);
 #ifdef DEBUG
@@ -268,7 +268,7 @@ public:
 		}
 	}
 
-	void async_tcp_write_handler(const boost::system::error_code& error, std::size_t bytes_transferred, std::string message){
+	void async_tcp_write_handler(const boost::system::error_code& error, std::size_t bytes_transferred){
 		if(error){
 #ifdef DEBUG
 			std::cerr << "error writing to the broker " << error << std::endl;
@@ -276,9 +276,6 @@ public:
 			if(websocket_connection)
 				websocket_connection->close(websocketpp::close::status::NORMAL, "problem while writing to the broker");
 		}
-#ifdef DEBUG
-		std::cerr << "successfully wrote " << message << std::endl;
-#endif
 	}
 
 	void send(const std::string &message) {
@@ -295,13 +292,12 @@ public:
 			std::cerr << "broker connection had been established. sending this message ..." << std::endl;
 #endif
 			socket->async_write(
-				boost::asio::buffer(message.c_str(), message.size()),
+				SharedBuffer(message),
 				boost::bind(
 					&Connection::async_tcp_write_handler,
 					this->shared_from_this(),
 					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred,
-					message
+					boost::asio::placeholders::bytes_transferred
 				)
 			);
 		} else {

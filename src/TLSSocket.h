@@ -13,7 +13,7 @@ public:
 	void do_connect();
 	void end();
 	void async_read(boost::asio::mutable_buffers_1, std::size_t,  boost::function<void(const boost::system::error_code&, size_t)>);
-	void async_write(boost::asio::const_buffers_1, boost::function<void(const boost::system::error_code&, size_t)>);
+	void async_write(SharedBuffer, boost::function<void(const boost::system::error_code&, size_t)>);
 
 private:
     boost::asio::ip::tcp::socket &getSocketForAsio();
