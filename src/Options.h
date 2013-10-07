@@ -20,6 +20,7 @@ struct Options{
 	std::string ws_dh;
 	std::string ws_tls_version;
 	bool ws_tls;
+	bool verbose;
 };
 
 #endif /* OPTIONS_H_ */

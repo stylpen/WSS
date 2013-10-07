@@ -81,6 +81,7 @@ int main(int argc, char* argv[]){
 		options.ws_key = variables_map.find("ws-keyfile") != variables_map.end() ? variables_map["ws-keyfile"].as<std::string>() : "";
 		options.ws_tls_version = variables_map.find("ws-tls-version") != variables_map.end() ? variables_map["ws-tls-version"].as<std::string>() : "TLSv1";
 		options.ws_tls = (variables_map.find("ws-keyfile") != variables_map.end() && variables_map.find("ws-chainfile") != variables_map.end()) ? true : false;
+		options.verbose = (variables_map.find("verbose") != variables_map.end())? true : false;
 
 		boost::to_upper(options.broker_tls_version);
 		boost::to_upper(options.ws_tls_version);
