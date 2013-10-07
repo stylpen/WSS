@@ -27,9 +27,8 @@ void Plain_Socket::do_connect(){
 				boost::bind(&Plain_Socket::handle_connect, shared_from_this(),
 						boost::asio::placeholders::error));
 	}catch(std::exception &e){
-#ifdef DEBUG
-		std::cerr << "exception in connect: " << e.what() << std::endl;
-#endif
+		if(options.verbose)
+			std::cerr << "Failed connecting to broker: " << e.what() << std::endl;
 		get_io_service().post(on_fail);
 	}
 }
@@ -41,9 +40,8 @@ void Plain_Socket::handle_connect(const boost::system::error_code& error){
 #endif
 		get_io_service().post(on_success);
 	} else {
-#ifdef DEBUG
-		std::cerr << "Connect failed: " << error.message() << std::endl;
-#endif
+		if(options.verbose)
+			std::cerr << "Failed connecting to broker: " << error.message() << std::endl;
 		get_io_service().post(on_fail);
 	}
 }

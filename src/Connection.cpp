@@ -10,6 +10,8 @@
 #include "PlainSocket.h"
 #include "TLSSocket.h"
 #include "SharedBuffer.h"
+#include "Options.h"
+extern Options options;
 
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
@@ -166,8 +168,11 @@ public:
 #ifdef DEBUG
 			std::cerr << "stopped receiving header " << std::endl << bytes_transferred << " bytes arrived so far. error " << error << " websocket: " << websocket_connection << " connection " << this << std::endl << std::endl;
 #endif
-			if(error && error != boost::asio::error::operation_aborted)
+			if(error && error != boost::asio::error::operation_aborted){
+				if(options.verbose)
+					std::cerr << "error mqtt header " << error.message() << std::endl;
 				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading MQTT header");
+			}
 		}
 	}
 
@@ -233,8 +238,11 @@ public:
 #ifdef DEBUG
 				std::cerr << "error reading length bytes " << std::endl << bytes_transferred << "bytes arrived so far " << error << " websocket: " << websocket_connection << " connection " << this << std::endl << std::endl;
 #endif
-				if(error && error != boost::asio::error::operation_aborted)
+				if(error && error != boost::asio::error::operation_aborted){
+					if(options.verbose)
+						std::cerr << "error reading remaining length of mqtt message " << error.message() << std::endl;
 					websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem while reading remaining length");
+				}
 			}
 		}
 
@@ -260,16 +268,18 @@ public:
 #ifdef DEBUG
 			std::cerr << "error reading mqtt message (or operation was canceled)" << std::endl << bytes_transferred << "bytes arrived so far " << error << " websocket: " << websocket_connection << " connection " << this << std::endl << std::endl;
 #endif
-			if(error && error != boost::asio::error::operation_aborted)
+			if(error && error != boost::asio::error::operation_aborted){
+				if(options.verbose)
+					std::cerr << "error reading mqtt message " << error.message() << std::endl;
 				websocket_connection->close(websocketpp::close::status::NORMAL, "connection problem in receice_message");
+			}
 		}
 	}
 
 	void async_tcp_write_handler(const boost::system::error_code& error, std::size_t bytes_transferred){
 		if(error){
-#ifdef DEBUG
-			std::cerr << "error writing to the broker " << error << std::endl;
-#endif
+			if(options.verbose)
+				std::cerr << "error writing to the broker " << error.message() << std::endl;
 			if(websocket_connection)
 				websocket_connection->close(websocketpp::close::status::NORMAL, "problem while writing to the broker");
 		}

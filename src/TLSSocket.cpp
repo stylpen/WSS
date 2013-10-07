@@ -26,9 +26,8 @@ void TLS_Socket::handle_shutdown(const boost::system::error_code& error){
 		get_io_service().post(on_end);
 #endif
 	} else {
-#ifdef DEBUG
-		std::cerr << "TLS shutdown failed: " << error.message() << std::endl;
-#endif
+		if(options.verbose)
+			std::cerr << "TLS shutdown failed: " << error.message() << std::endl;
 		get_io_service().post(on_fail);
 		get_io_service().post(on_end);
 	}
@@ -51,9 +50,8 @@ void TLS_Socket::do_connect(){
 				boost::bind(&TLS_Socket::handle_connect, shared_from_this(),
 						boost::asio::placeholders::error));
 	}catch(std::exception &e){
-#ifdef DEBUG
-		std::cerr << "exception in async tls connect: " << e.what() << std::endl;
-#endif
+		if(options.verbose)
+			std::cerr << "exception in async tls connect: " << e.what() << std::endl;
 		get_io_service().post(on_fail);
 	}
 }
@@ -86,9 +84,8 @@ void TLS_Socket::handle_connect(const boost::system::error_code& error){
 				boost::bind(&TLS_Socket::handle_handshake, shared_from_this(),
 						boost::asio::placeholders::error));
 	} else {
-#ifdef DEBUG
-		std::cerr << "Connect failed: " << error.message() << std::endl;
-#endif
+		if(options.verbose)
+			std::cerr << "Failed connecting to broker: " << error.message() << std::endl;
 		get_io_service().post(on_fail);
 	}
 }
@@ -100,9 +97,8 @@ void TLS_Socket::handle_handshake(const boost::system::error_code& error){
 #endif
 		get_io_service().post(on_success);
 	} else {
-#ifdef DEBUG
-		std::cerr << "Handshake failed: " << error.message() << std::endl;
-#endif
+		if(options.verbose)
+			std::cerr << "TLS handshake with broker failed: " << error.message() << std::endl;
 		get_io_service().post(on_fail);
 	}
 }
