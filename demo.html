@@ -1,0 +1,40 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WSS Testing Playground</title>
+    <script type="text/javascript" src="js/paho.js"></script>
+    <script type="text/javascript" src="js/demo.js"></script>
+  </head>
+  <body>
+    <div id="mqtt">
+          <div id="input_area">
+            <form action="">
+              <label for="host">Host</label>
+              <input type="text" name="host" id="host" placeholder="localhost">
+              <label for="port">Port</label>
+              <input type="text" name="port" id="port" placeholder="18883">
+              <input type="button" name="connect" id="connect" value="connect" onclick="mqtt.connect();"><br>
+              
+              <label for="subscription_topic">Topic</label>
+              <input type="text" name="subscription_topic" id="subscription_topic" placeholder="test">
+              <input type="button" name="subscribe" id="subscribe" value="subscribe" onclick="mqtt.subscribe();"><br>
+              
+              <label for="publish_topic">Topic</label>
+              <input type="text" name="publish_topic" id="publish_topic" placeholder="test">
+              <label for="message">Message</label>
+              <input type="text" name="message" id="message" placeholder="test">
+              <input type="button" name="publish" id="publish" value="publish" onclick="mqtt.publish();"><br>
+              
+              <label for="unsubscription_topic">Topic</label>
+              <input type="text" name="unsubscription_topic" id="unsubscription_topic" placeholder="test">
+              <input type="button" name="unsubscribe" id="unsubscribe" value="unsubscribe" onclick="mqtt.unsubscribe();"><br>
+              
+              <input type="button" name="disconnect" id="disconnect" value="disconnect" onclick="mqtt.disconnect();"><br>
+            </form>
+          </div>
+          <div id="output_area"> <strong>Log:</strong>
+            <div id="log"></div>
+          </div>
+     </div>
+  </body>
+</html>
