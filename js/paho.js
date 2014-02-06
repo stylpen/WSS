@@ -911,7 +911,7 @@ Messaging = (function (global) {
         else
           wsurl = ["ws://", host, ":", port, "/mqtt"].join("");
         this.connected = false;
-        this.socket = new WebSocket(wsurl);
+        this.socket = new WebSocket(wsurl, 'mqttv3.1');
         this.socket.binaryType = 'arraybuffer';
         this.socket.onopen = scope(this._on_socket_open, this);
         this.socket.onmessage = scope(this._on_socket_message, this);
