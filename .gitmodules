@@ -1,0 +1,6 @@
+[submodule "websocketpp"]
+	path = websocketpp
+	url = git@github.com:zaphoyd/websocketpp.git
+[submodule "openssl"]
+	path = openssl
+	url = git://git.openssl.org/openssl.git
