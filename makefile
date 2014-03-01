@@ -18,9 +18,16 @@ BOOST_PREFIX ?= /usr/local
 BOOST_LIB_PATH		?= $(BOOST_PREFIX)/lib
 BOOST_INCLUDE_PATH  ?= $(BOOST_PREFIX)/include
 
+BOOST_LIBS = libboost_program_options libboost_system libboost_thread libboost_date_time libboost_regex
+
+ifeq ($(wildcard $(BOOST_LIB_PATH)/libboost*-mt.a),)
+	BOOST_LIBS := $(foreach LIB, $(BOOST_LIBS), $(BOOST_LIB_PATH)/$(LIB).a)
+else
+	BOOST_LIBS := $(foreach LIB, $(BOOST_LIBS), $(BOOST_LIB_PATH)/$(LIB)-mt.a)
+endif
 
 WSS: build_release/SharedBuffer.o build_release/Socket.o build_release/PlainSocket.o build_release/TLSSocket.o build_release/Connection.o build_release/ServerHandler.o build_release/WSS.o 
-	g++ -oWSS build_release/SharedBuffer.o build_release/Connection.o build_release/PlainSocket.o build_release/ServerHandler.o build_release/Socket.o build_release/TLSSocket.o build_release/WSS.o websocketpp/libwebsocketpp.a $(BOOST_LIB_PATH)/libboost_program_options.a $(BOOST_LIB_PATH)/libboost_system.a $(BOOST_LIB_PATH)/libboost_thread.a $(BOOST_LIB_PATH)/libboost_date_time.a $(BOOST_LIB_PATH)/libboost_regex.a openssl/libssl.a openssl/libcrypto.a -ldl -lrt -lpthread -static 
+	g++ -oWSS build_release/SharedBuffer.o build_release/Connection.o build_release/PlainSocket.o build_release/ServerHandler.o build_release/Socket.o build_release/TLSSocket.o build_release/WSS.o websocketpp/libwebsocketpp.a $(BOOST_LIBS) openssl/libssl.a openssl/libcrypto.a -ldl -lrt -lpthread -static 
 	
 build_release/SharedBuffer.o: src/SharedBuffer.h src/SharedBuffer.cpp
 	g++ -c -obuild_release/SharedBuffer.o -Isrc -I$(BOOST_INCLUDE_PATH) -Iwebsocketpp/src -Iopenssl/include src/SharedBuffer.cpp  -Wall -O3
@@ -45,7 +52,7 @@ build_release/WSS.o: src/WSS.cpp
 	
 	
 WSS_debug:  build_debug/SharedBuffer.o build_debug/Socket.o build_debug/PlainSocket.o build_debug/TLSSocket.o build_debug/Connection.o build_debug/ServerHandler.o build_debug/WSS.o
-	g++ -L/usr/local/lib -o WSS_debug  build_debug/SharedBuffer.o build_debug/Connection.o build_debug/PlainSocket.o build_debug/ServerHandler.o build_debug/Socket.o build_debug/TLSSocket.o build_debug/WSS.o websocketpp/libwebsocketpp.a $(BOOST_LIB_PATH)/libboost_program_options.a $(BOOST_LIB_PATH)/libboost_system.a $(BOOST_LIB_PATH)/libboost_thread.a $(BOOST_LIB_PATH)/libboost_date_time.a $(BOOST_LIB_PATH)/libboost_regex.a openssl/libssl.a openssl/libcrypto.a -ldl -lrt -lpthread -static 
+	g++ -L/usr/local/lib -o WSS_debug  build_debug/SharedBuffer.o build_debug/Connection.o build_debug/PlainSocket.o build_debug/ServerHandler.o build_debug/Socket.o build_debug/TLSSocket.o build_debug/WSS.o websocketpp/libwebsocketpp.a $(BOOST_LIBS) openssl/libssl.a openssl/libcrypto.a -ldl -lrt -lpthread -static 
 
 build_debug/SharedBuffer.o: src/SharedBuffer.h src/SharedBuffer.cpp
 	g++ -c -obuild_debug/SharedBuffer.o -Isrc -I$(BOOST_INCLUDE_PATH) -Iwebsocketpp/src -Iopenssl/include src/SharedBuffer.cpp -Wall -DDEBUG
