@@ -26,8 +26,8 @@
 */
 
 
-#include <websocketpp/sockets/tls.hpp>
-#include <websocketpp/websocketpp.hpp>
+#include <sockets/tls.hpp>
+#include <websocketpp.hpp>
 #include <boost/program_options.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/algorithm/string.hpp>

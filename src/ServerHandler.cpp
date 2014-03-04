@@ -1,5 +1,5 @@
-#include <websocketpp/sockets/tls.hpp>
-#include <websocketpp/websocketpp.hpp>
+#include <sockets/tls.hpp>
+#include <websocketpp.hpp>
 #include "Connection.cpp"
 #include "Options.h"
 
