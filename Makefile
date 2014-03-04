@@ -20,11 +20,11 @@ BOOST_LIBS = boost_program_options boost_system boost_thread boost_date_time boo
 
 ifeq ($(wildcard $(BOOST_LIB_PATH)/libboost*-mt.a),)
 	BOOST_STATIC_LIBS := $(foreach LIB, $(BOOST_LIBS), $(BOOST_LIB_PATH)/lib$(LIB).a)
+	BOOST_DYNAMIC_LIBS := -L$(BOOST_LIB_PATH) $(foreach LIB, $(BOOST_LIBS), -l$(LIB))
 else
 	BOOST_STATIC_LIBS := $(foreach LIB, $(BOOST_LIBS), $(BOOST_LIB_PATH)/lib$(LIB)-mt.a)
+	BOOST_DYNAMIC_LIBS := -L$(BOOST_LIB_PATH) $(foreach LIB, $(BOOST_LIBS), -l$(LIB)-mt)
 endif
-
-BOOST_DYNAMIC_LIBS := -L$(BOOST_LIB_PATH) $(foreach LIB, $(BOOST_LIBS), -l$(LIB))
 
 
 # openssl
