@@ -10,11 +10,11 @@ TCP traffic from the broker is analyzed so that only complete MQTT messages will
 
 It uses version 0.2 of websocket++ (https://github.com/zaphoyd/websocketpp/tree/0.2.x) and the Boost C++ Libraries (http://www.boost.org/).
 
-The Websocket Server was developed using the eclipse IDE.
-It assumes the boost and websocket++ header files and libraries are located in /usr/local/include and /usr/local/lib respectively. Boost headers are expected to be in /usr/include/ and libs in /usr/lib/. If that doesn't match your setup just edit the eclipse project properties.
+The Makefile assumes you have boost installed in /usr/local. If your setup is different set ```BOOST_PREFIX=<your boost location>``` accordingly. Please refer to the Makefile for more information.
+By default a statically linked binary will be created. ```make SHARED=1``` will create a dynamically linked one. You can optionally pass ```DEBUG=1``` to ```make``` in order to get very verbose output (not recommended).
 
 You can also build manually:
-To create an executale that uses shared libraries run
+To create an executale that uses shared libraries run (for example)
 
 g++ -o WSS_shared -I/usr/local/include -L/usr/local/lib -lpthread -lboost_program_options -lboost_regex -lboost_thread -lboost_system -lwebsocketpp  src/WSS.cpp -O3 -Wall
 
