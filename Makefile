@@ -39,10 +39,6 @@ else
 	LINKER_SETTINGS = websocketpp/libwebsocketpp.a $(BOOST_STATIC_LIBS) $(OPENSSL_LIB_PATH)/libssl.a $(OPENSSL_LIB_PATH)/libcrypto.a -ldl -lpthread -static
 endif
 
-ifneq ($(shell uname -m), armv6l)
-	LINKER_SETTINGS := $(LINKER_SETTINGS) -lrt
-endif
-
 
 INCLUDES = -I$(BOOST_INCLUDE_PATH) -Isrc -Iwebsocketpp/src -I$(OPENSSL_INCLUDE_PATH)
 
