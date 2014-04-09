@@ -12,7 +12,7 @@ else
 endif
 
 # boost
-BOOST_PREFIX ?= /usr/local
+BOOST_PREFIX ?= /usr
 BOOST_LIB_PATH		?= $(BOOST_PREFIX)/lib
 BOOST_INCLUDE_PATH  ?= $(BOOST_PREFIX)/include
 
@@ -39,10 +39,6 @@ else
 	LINKER_SETTINGS = websocketpp/libwebsocketpp.a $(BOOST_STATIC_LIBS) $(OPENSSL_LIB_PATH)/libssl.a $(OPENSSL_LIB_PATH)/libcrypto.a -ldl -lpthread -static
 endif
 
-ifneq ($(shell uname -m), armv6l)
-	LINKER_SETTINGS := $(LINKER_SETTINGS) -lrt
-endif
-
 
 INCLUDES = -I$(BOOST_INCLUDE_PATH) -Isrc -Iwebsocketpp/src -I$(OPENSSL_INCLUDE_PATH)
 
@@ -56,6 +52,7 @@ gitSubmodules:
 openssl: gitSubmodules
 	cd openssl; \
 	./config shared && \
+	make depend &&\
 	make
 	
 websocketpp: gitSubmodules
