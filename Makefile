@@ -12,7 +12,7 @@ else
 endif
 
 # boost
-BOOST_PREFIX ?= /usr/local
+BOOST_PREFIX ?= /usr
 BOOST_LIB_PATH		?= $(BOOST_PREFIX)/lib
 BOOST_INCLUDE_PATH  ?= $(BOOST_PREFIX)/include
 
@@ -52,6 +52,7 @@ gitSubmodules:
 openssl: gitSubmodules
 	cd openssl; \
 	./config shared && \
+	make depend &&\
 	make
 	
 websocketpp: gitSubmodules
