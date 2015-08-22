@@ -18,7 +18,7 @@ void Plain_Socket::async_write(SharedBuffer buffer, boost::function<void(const b
 void Plain_Socket::do_connect(){
 	try{
 		boost::asio::ip::tcp::resolver resolver(get_io_service());
-		boost::asio::ip::tcp::resolver::query query(options.broker_hostname, options.broker_port);
+		boost::asio::ip::tcp::resolver::query query(options.broker_hostname, options.broker_port, boost::asio::ip::resolver_query_base::numeric_service);
 		boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 #ifdef DEBUG
 		std::cerr << "will start plain async connect" << std::endl;
