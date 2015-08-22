@@ -61,28 +61,28 @@ websocketpp: gitSubmodules
 	make SHARED=1
 
 $(BIN_NAME): $(WORK_DIR)/SharedBuffer.o $(WORK_DIR)/Socket.o $(WORK_DIR)/PlainSocket.o $(WORK_DIR)/TLSSocket.o $(WORK_DIR)/Connection.o $(WORK_DIR)/ServerHandler.o $(WORK_DIR)/WSS.o
-	g++ -o $(BIN_NAME) $(WORK_DIR)/SharedBuffer.o $(WORK_DIR)/Connection.o $(WORK_DIR)/PlainSocket.o $(WORK_DIR)/ServerHandler.o $(WORK_DIR)/Socket.o $(WORK_DIR)/TLSSocket.o $(WORK_DIR)/WSS.o $(LINKER_SETTINGS)
+	$(CXX) -o $(BIN_NAME) $(WORK_DIR)/SharedBuffer.o $(WORK_DIR)/Connection.o $(WORK_DIR)/PlainSocket.o $(WORK_DIR)/ServerHandler.o $(WORK_DIR)/Socket.o $(WORK_DIR)/TLSSocket.o $(WORK_DIR)/WSS.o $(LINKER_SETTINGS)
 	
 $(WORK_DIR)/SharedBuffer.o: src/SharedBuffer.h src/SharedBuffer.cpp
-	g++ -c -o $(WORK_DIR)/SharedBuffer.o $(INCLUDES) src/SharedBuffer.cpp $(CXX_FLAGS)
+	$(CXX) -c -o $(WORK_DIR)/SharedBuffer.o $(INCLUDES) src/SharedBuffer.cpp $(CXX_FLAGS)
 
 $(WORK_DIR)/Socket.o: src/Socket.h src/Socket.cpp
-	g++ -c -o $(WORK_DIR)/Socket.o $(INCLUDES) src/Socket.cpp $(CXX_FLAGS)
+	$(CXX) -c -o $(WORK_DIR)/Socket.o $(INCLUDES) src/Socket.cpp $(CXX_FLAGS)
 	
 $(WORK_DIR)/PlainSocket.o: src/PlainSocket.h src/PlainSocket.cpp
-	g++ -c -o $(WORK_DIR)/PlainSocket.o $(INCLUDES) src/PlainSocket.cpp $(CXX_FLAGS)
+	$(CXX) -c -o $(WORK_DIR)/PlainSocket.o $(INCLUDES) src/PlainSocket.cpp $(CXX_FLAGS)
 
 $(WORK_DIR)/TLSSocket.o: src/TLSSocket.h src/TLSSocket.cpp
-	g++ -c -o $(WORK_DIR)/TLSSocket.o $(INCLUDES) src/TLSSocket.cpp $(CXX_FLAGS)
+	$(CXX) -c -o $(WORK_DIR)/TLSSocket.o $(INCLUDES) src/TLSSocket.cpp $(CXX_FLAGS)
 
 $(WORK_DIR)/Connection.o: src/Connection.cpp
-	g++ -c -o $(WORK_DIR)/Connection.o $(INCLUDES) src/Connection.cpp $(CXX_FLAGS)
+	$(CXX) -c -o $(WORK_DIR)/Connection.o $(INCLUDES) src/Connection.cpp $(CXX_FLAGS)
 
 $(WORK_DIR)/ServerHandler.o: src/ServerHandler.cpp
-	g++ -c -o $(WORK_DIR)/ServerHandler.o $(INCLUDES) src/ServerHandler.cpp $(CXX_FLAGS)
+	$(CXX) -c -o $(WORK_DIR)/ServerHandler.o $(INCLUDES) src/ServerHandler.cpp $(CXX_FLAGS)
 
 $(WORK_DIR)/WSS.o: src/WSS.cpp
-	g++ -c -o $(WORK_DIR)/WSS.o $(INCLUDES) src/WSS.cpp $(CXX_FLAGS)
+	$(CXX) -c -o $(WORK_DIR)/WSS.o $(INCLUDES) src/WSS.cpp $(CXX_FLAGS)
 	
 clean: clean_debug clean_release clean_openssl clean_websocketpp
 
