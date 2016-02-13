@@ -4,11 +4,11 @@ COMMON_CXX_FLAGS = -Wall -fstack-protector
 ifeq ($(DEBUG), 1)
 	BIN_NAME = WSS_debug
 	WORK_DIR = build_debug
-	CXX_FLAGS = $(COMMON_CXX_FLAGS) -ggdb -DDEBUG
+	CXX_FLAGS = $(COMMON_CXX_FLAGS) -fpic -fpie -ggdb -DDEBUG -O0
 else
 	BIN_NAME = WSS
 	WORK_DIR = build_release
-	CXX_FLAGS = $(COMMON_CXX_FLAGS) -Wall -O3
+	CXX_FLAGS = $(COMMON_CXX_FLAGS) -fpic -fpie -Wall -O3
 endif
 
 # boost
