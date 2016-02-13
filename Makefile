@@ -1,5 +1,5 @@
 # general setup
-COMMON_CXX_FLAGS = -Wall -fstack-protector -fpic -fpie
+COMMON_CXX_FLAGS = -Wall -fstack-protector -fPIC -pie -fPIE -Wl,-z,relro,-z,now
 
 ifeq ($(DEBUG), 1)
 	BIN_NAME = WSS_debug
@@ -34,9 +34,9 @@ OPENSSL_INCLUDE_PATH	?= openssl/include
 # shared or static
 ifeq ($(SHARED), 1)
 	BIN_NAME := $(BIN_NAME)_shared
-	LINKER_SETTINGS = -Lwebsocketpp -L$(OPENSSL_LIB_PATH) -lwebsocketpp $(BOOST_DYNAMIC_LIBS) -lcrypto -lssl -ldl -lpthread
+	LINKER_SETTINGS = -Lwebsocketpp -L$(OPENSSL_LIB_PATH) -lwebsocketpp $(BOOST_DYNAMIC_LIBS) -lcrypto -lssl -ldl -lpthread -Wl,-z,relro,-z,now
 else
-	LINKER_SETTINGS = websocketpp/libwebsocketpp.a $(BOOST_STATIC_LIBS) $(OPENSSL_LIB_PATH)/libssl.a $(OPENSSL_LIB_PATH)/libcrypto.a -ldl -lpthread -static
+	LINKER_SETTINGS = websocketpp/libwebsocketpp.a $(BOOST_STATIC_LIBS) $(OPENSSL_LIB_PATH)/libssl.a $(OPENSSL_LIB_PATH)/libcrypto.a -ldl -lpthread -static -Wl,-z,relro,-z,now
 endif
 
 
